@@ -1,0 +1,19 @@
+.csvpreviewer{
+	width: 820px;
+	overflow-x: scroll;
+}
+
+.csvpreviewer table{
+	
+}
+
+.csvpreviewer table th{
+	padding: 3px;
+}
+
+.csvpreviewer table td{
+	border: 1px solid #ccc;
+	border-collapse: collapse;
+	padding: 5px;
+	background: #fff;
+}

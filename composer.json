@@ -1,0 +1,14 @@
+{
+    "name": "burnbright/silverstripe-importexport",
+    "description": "An upgrade to SilverStripe's bulk loading and exporting",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Jeremy Shipman",
+            "email": "jeremy@burnbright.net"
+        }
+    ],
+    "require": {
+        "goodby/csv": "1.2.x"
+    }
+}
