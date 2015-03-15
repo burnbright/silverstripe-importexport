@@ -77,24 +77,17 @@ class GridFieldImporter_Request extends RequestHandler
 		$field = $this->getUploadField();
 		$uploadResponse = $field->upload($request);
 
-		//decode response body. ugly ;o
+		//decode response body. ugly hack ;o
 		$body = Convert::json2array( $uploadResponse->getBody() );
 		$body = array_shift($body);
 
-		//return $body['id'];
+		//add extra data
+		$body['import_url'] = $this->gridField->Link('importer/preview')."/".$body['id'];
 
-		//if($this->previewfirst){
-			// return Controller::curr()->redirect(
-			// 	$this->Link('preview')."/".$body['id']
-			// );
-/*		}else{
-			//do import
-			if($file = File::get()->byID((int)$body['id'])){
-				$this->component->importFile($file->getFullPath(), $this->gridField);
-			}
-		}*/
+		//re-encode
+		$response = new SS_HTTPResponse(Convert::raw2json(array($body)));
 		
-		return $uploadResponse;
+		return $response;
 	}
 
 	/**
