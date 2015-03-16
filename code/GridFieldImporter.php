@@ -11,10 +11,26 @@ class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler 
 	 */
 	protected $targetFragment;
 
+	protected $loaderClass = "CSVBulkLoader";
+
+	protected $recordcallback;
+
 	public function __construct($targetFragment = "after") {
 		$this->targetFragment = $targetFragment;
 	}
-	
+
+	public function setLoaderClass($class){
+		$this->loaderClass = $class;
+
+		return $this;
+	}
+
+	public function setRecordCallback($callback) {
+		$this->recordcallback = $callback;
+
+		return $this;
+	}
+
 	public function getHTMLFragments($gridField) {
 		$button = new GridField_FormAction(
 			$gridField, 
@@ -26,12 +42,10 @@ class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler 
 		$button->setAttribute('data-icon', 'upload-csv');
 		$button->addExtraClass('no-ajax');
 
-
 		$uploadfield = $this->getUploadField($gridField);
 
 		$data = array(
 			'Button' => $button,
-			//'DeleteRecords' => $deleterecordsfield,
 			'UploadField' => $uploadfield
 		);
 
@@ -87,18 +101,31 @@ class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler 
 
 	public function importFile($filepath, $gridField, $colmap = null){
 
-		$loader = $this->getLoader();
+		$loader = $this->getLoader($gridField);
 
-		//TODO: empty if possible
+		//set or merge in given col map
+		if($colmap){
+			$loader->columnMap = $loader->columnMap ?
+				array_merge($loader->columnMap, $colmap) : $colmap;
+		}
+
 		$results = $loader->load($filepath);
 
+		//TODO: handle validation/loading issues
 
-		$gridField->getForm()->sessionMessage("Imported!" , 'good');
+		//$gridField->getForm()->sessionMessage("Imported!" , 'good');
+
+		//TODO: redirect
+		return "Imported!";
 	}
 
-	public function getLoader() {
-		//TODO: remove hard-coded value
-		return new CSVBulkLoader("MenuProductSelection");
+	public function getLoader($gridField) {
+		$class = $this->loaderClass;
+		$loader = new $class($gridField->getModelClass());
+		if($this->recordcallback && property_exists($class, 'recordCallback')){
+			$loader->recordCallback = $this->recordcallback;
+		}
+		return $loader;
 	}
 
 }

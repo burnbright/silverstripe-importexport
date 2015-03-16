@@ -2,7 +2,7 @@
 
 	//hide upload field
 	var importerpanel = $("div.csv-importer");
-	hiddenfields.hide();
+	importerpanel.hide();
 
 	$.entwine('ss', function($) {
 		$('.ss-gridfield button.toggle-csv-fields.action').entwine({

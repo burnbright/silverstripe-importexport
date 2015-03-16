@@ -1,7 +1,7 @@
 <?php
 
 /**
- * A visual interface for mapping field names
+ * A visual interface for mapping field names.
  */
 class CSVFieldMapper extends CSVPreviewer{
 
@@ -30,7 +30,7 @@ class CSVFieldMapper extends CSVPreviewer{
 	}
 
 	protected function createHeadingDropdown($heading) {
-		return DropdownField::create("headingvals[".$heading."]", 
+		return DropdownField::create("mappings[".$heading."]", 
 			"Dropdown", $this->mappablecols
 		)->setHasEmptyDefault(true)
 		->setEmptyString("Unmapped");

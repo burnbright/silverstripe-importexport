@@ -140,6 +140,7 @@ class GridFieldImporter_Request extends RequestHandler
 
 		$actions = new FieldList(
 			new FormAction("import", "Import CSV")
+			//TODO: cancel action
 		);
 
 		$form = new Form($this, __FUNCTION__, $fields, $actions);
@@ -155,7 +156,7 @@ class GridFieldImporter_Request extends RequestHandler
 	protected function getMappableColumns() {
 		$class = $this->gridField->getModelClass();
 		$map = (array)singleton($class)->fieldLabels(false);
-		
+
 		// $has_ones = singleton($this->objectClass)->has_one();
 		// $has_manys = singleton($this->objectClass)->has_many();
 		// $many_manys = singleton($this->objectClass)->many_many();
@@ -173,17 +174,18 @@ class GridFieldImporter_Request extends RequestHandler
 		if(!$file){
 			return "file not found";
 		}
-		//$columnmap = $this->mapFromData($data);
+		
+		$colmap = Convert::raw2sql($request->postVar('mappings'));
+		//$colmap = empty($colmap) ? null : array_filter($colmap);
+		
+		if($colmap){
+			$this->component->importFile(
+				$file->getFullPath(), $this->gridField,
+				$colmap
+			);
 
-		$this->component->importFile(
-			$file->getFullPath(), $this->gridField
-			//$columnmap
-		);
+		}
 
-	}
-
-	protected function mapFromData($data) {
-		var_dump($data);
 	}
 
 	/**
