@@ -8,7 +8,6 @@ class GridFieldImporter_Request extends RequestHandler
 	 * @var GridField 
 	 */
 	protected $gridField;
-	
 
 	protected $component;
 
@@ -16,10 +15,10 @@ class GridFieldImporter_Request extends RequestHandler
 	
 
 	/**
-	 * Gridfield Form controller
-	 * @var Controller
+	 * Parent handler to link up to
+	 * @var RequestHandler
 	 */
-	protected $controller;
+	protected $requestHandler;
 	
 
 	/**
@@ -46,13 +45,13 @@ class GridFieldImporter_Request extends RequestHandler
 	 * 
 	 * @param GridField $gridField
 	 * @param GridField_URLHandler $component
-	 * @param Controller $controller
+	 * @param RequestHandler $handler
 	 */
-	public function __construct($gridField, $component, $controller)
+	public function __construct($gridField, $component, $handler)
 	{
 		$this->gridField = $gridField;
 		$this->component = $component;
-		$this->controller = $controller;		
+		$this->requestHandler = $handler;		
 		parent::__construct();
 	}
 
@@ -83,6 +82,8 @@ class GridFieldImporter_Request extends RequestHandler
 
 		//add extra data
 		$body['import_url'] = $this->gridField->Link('importer/preview')."/".$body['id'];
+		//don't return buttons at all
+		unset($body['buttons']);
 
 		//re-encode
 		$response = new SS_HTTPResponse(Convert::raw2json(array($body)));
@@ -139,8 +140,8 @@ class GridFieldImporter_Request extends RequestHandler
 		);
 
 		$actions = new FieldList(
-			new FormAction("import", "Import CSV")
-			//TODO: cancel action
+			new FormAction("import", "Import CSV"),
+			new FormAction("cancel", "Cancel")
 		);
 
 		$form = new Form($this, __FUNCTION__, $fields, $actions);
@@ -162,30 +163,42 @@ class GridFieldImporter_Request extends RequestHandler
 		// $many_manys = singleton($this->objectClass)->many_many();
 		
 		// $spec['relations'] = (array)$has_ones + (array)$has_manys + (array)$many_manys;
-		//var_dump($map);
+		
 		return $map;
 	}
 
-
+	/**
+	 * Import the current file
+	 * @param  SS_HTTPRequest $request
+	 */
 	public function import(SS_HTTPRequest $request) {
-		
-		$file = File::get()
-			->byID($request->param('FileID'));
-		if(!$file){
-			return "file not found";
-		}
-		
-		$colmap = Convert::raw2sql($request->postVar('mappings'));
-		//$colmap = empty($colmap) ? null : array_filter($colmap);
-		
-		if($colmap){
-			$this->component->importFile(
-				$file->getFullPath(), $this->gridField,
-				$colmap
-			);
+
+		if($request->postVar('action_import')){
+
+			$file = File::get()
+				->byID($request->param('FileID'));
+			if(!$file){
+				return "file not found";
+			}
+			$colmap = Convert::raw2sql($request->postVar('mappings'));
+			
+			if($colmap){
+				$this->component->importFile(
+					$file->getFullPath(),
+					$this->gridField,
+					$colmap
+				);
+			}
 
 		}
 
+		$controller = $this->getToplevelController();
+
+		$url = method_exists($this->requestHandler, "Link") ?
+			$this->requestHandler->Link() :
+			$controller->Link();
+
+		$controller->redirect($url);
 	}
 
 	/**
@@ -208,6 +221,23 @@ class GridFieldImporter_Request extends RequestHandler
 		return Controller::join_links(
 			$this->gridField->Link(), $this->urlSegment, $action
 		);
+	}
+
+	/**
+	 * @see GridFieldDetailForm_ItemRequest::getTopLevelController
+	 * @return Controller
+	 */
+	protected function getToplevelController() {
+		$c = $this->requestHandler;
+		while($c && $c instanceof GridFieldDetailForm_ItemRequest) {
+			$c = $c->getController();
+		}
+
+		if(!$c){
+			$c = Controller::curr();
+		}
+
+		return $c;
 	}
 
 }
