@@ -8,29 +8,27 @@ Users can choose which columns map to DataObject fields. This removes any need t
 
 Users can state if the first line of data is infact a heading row.
 
-## Feature ideas
+## Usage
 
+### Grid Field Importer
 
+```php
+    $importer = new GridFieldImporter('before');
+    $gridConfig->addComponent($importer);
+```
+
+## Future feature ideas
 
 ### Importing
 
- * Column mapper
  * Choose mandatory columns
+ * Auto-map columns that match loader fields
  * Optionally use DataObject 'defaults' values for empty cells
- * Require specific fields
  * Cache selected column mapping for future uploads
- * Validate incoming data, and flag issues
- * 
+ * Validate incoming data, and flag any issues
 
 ### Exporting
 
  * Choose fields to export
  * Choose order of fields to export
  * Display a preview of export data
-
-
-## Future
-
-Use an established / feature rich csv composer package:
-https://github.com/thephpleague/csv (best, but requires PHP 5.4)
-https://github.com/goodby/csv

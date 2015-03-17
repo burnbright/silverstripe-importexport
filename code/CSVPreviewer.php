@@ -1,5 +1,4 @@
 <?php
-
 /**
  * View the content of a given CSV file
  */
@@ -17,10 +16,20 @@ class CSVPreviewer extends ViewableData{
 		$this->file = $file;
 	}
 
+	/**
+	 * Choose the nubmer of lines to preview
+	 */
+	public function setPreviewCount($count) {
+		$this->previewcount = $count;
+
+		return $this;
+	}
+
+	/**
+	 * Extract preview of CSV from file
+	 */
 	public function loadCSV(){
-
 		$parser = new CSVParser($this->file);
-
 		$count = 0;
 		foreach($parser as $row) {
 			$this->rows[]= $row;
@@ -29,7 +38,6 @@ class CSVPreviewer extends ViewableData{
 				break;
 			}
 		}
-		
 		$firstrow = array_keys($this->rows[0]);
 
 		//hack to include first row as a
@@ -40,6 +48,10 @@ class CSVPreviewer extends ViewableData{
 		}
 	}
 
+	/**
+	 * Render the previewer
+	 * @return string
+	 */
 	public function forTemplate(){
 		if(!$this->rows){
 			$this->loadCSV();
@@ -47,6 +59,10 @@ class CSVPreviewer extends ViewableData{
 		return $this->renderWith("CSVPreviewer");
 	}
 
+	/**
+	 * Get the CSV headings for use in template
+	 * @return ArrayList
+	 */
 	public function getHeadings() {
 		if(!$this->headings) return;
 		$out = new ArrayList();
@@ -60,6 +76,10 @@ class CSVPreviewer extends ViewableData{
 		return $out;
 	}
 
+	/**
+	 * Get CSV rows/cols for use in template
+	 * @return ArrayList
+	 */
 	public function getRows() {
 		$out = new ArrayList();
 		foreach ($this->rows as $row) {

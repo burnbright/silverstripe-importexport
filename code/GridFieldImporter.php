@@ -1,30 +1,47 @@
 <?php
 
 /**
- * Adds a way to import data to the grid field's parent list
+ * Adds a way to import data to the GridField's DataList
  */
 class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler {
-	
-	
+		
 	/**
 	 * Fragment to write the button to
+	 * @var string
 	 */
 	protected $targetFragment;
 
+	/**
+	 * Type of BulkLoader to load with
+	 * @var string
+	 */
 	protected $loaderClass = "CSVBulkLoader";
 
+	/**
+	 * 
+	 * @var string
+	 */
 	protected $recordcallback;
 
 	public function __construct($targetFragment = "after") {
 		$this->targetFragment = $targetFragment;
 	}
 
+	/**
+	 * Set the type of BulkLoader to handle imports
+	 * @param string $class
+	 */
 	public function setLoaderClass($class){
 		$this->loaderClass = $class;
 
 		return $this;
 	}
 
+	/**
+	 * Define a callback to be run on each imported record
+	 * (if recordCallback property can be set on loader)
+	 * @param callable $callback
+	 */
 	public function setRecordCallback($callback) {
 		$this->recordcallback = $callback;
 
@@ -60,8 +77,8 @@ class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler 
 	}
 
 	/**
-	 * Returned a configured UploadField instance
-	 * embedded in the gridfield heard
+	 * Return a configured UploadField instance
+	 * 
 	 * @param  GridField $gridField Current GridField
 	 * @return UploadField          Configured UploadField instance
 	 */
@@ -78,8 +95,7 @@ class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler 
 			->setConfig('canAttachExisting', false)
 			->setConfig('overwriteWarning', false)
 			->setAllowedExtensions(array('csv'))
-			//TODO: don't store temp CSV in assets
-			->setFolderName('csvImports')
+			->setFolderName('csvImports') //TODO: don't store temp CSV in assets
 			->addExtraClass("import-upload-csv-field");
 			
 		return $uploadField;
