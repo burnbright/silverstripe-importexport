@@ -121,55 +121,17 @@ class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler 
 		return $handler->handleRequest($request, DataModel::inst());
 	}
 
-	public function importFile($filepath, $gridField, $colmap = null){
-		$loader = $this->getLoader($gridField);
-		//set or merge in given col map
-		if($colmap){
-			$loader->columnMap = $loader->columnMap ?
-				array_merge($loader->columnMap, $colmap) : $colmap;
-		}
-		$results = $loader->load($filepath);
-		//TODO: handle validation/loading issues
-
-		$gridField->getForm()
-			->sessionMessage($this->getLoadResultsMessage($results), 'good');
-	}
-
+	/**
+	 * Get the BulkLoader
+	 */
 	public function getLoader($gridField) {
 		$class = $this->loaderClass;
 		$loader = new $class($gridField->getModelClass());
 		if($this->recordcallback && property_exists($class, 'recordCallback')){
 			$loader->recordCallback = $this->recordcallback;
 		}
+
 		return $loader;
-	}
-
-	/**
-	 * Genenrate a human-readable result message.
-	 * 
-	 * @see ModelAdmin::import()
-	 * @param  BulkLoader_Result $results
-	 * @return string
-	 */
-	protected function getLoadResultsMessage(BulkLoader_Result $results) {
-		$message = '';
-		if($results->CreatedCount()) $message .= _t(
-			'ModelAdmin.IMPORTEDRECORDS', "Imported {count} records.",
-			array('count' => $results->CreatedCount())
-		);
-		if($results->UpdatedCount()) $message .= _t(
-			'ModelAdmin.UPDATEDRECORDS', "Updated {count} records.",
-			array('count' => $results->UpdatedCount())
-		);
-		if($results->DeletedCount()) $message .= _t(
-			'ModelAdmin.DELETEDRECORDS', "Deleted {count} records.",
-			array('count' => $results->DeletedCount())
-		);
-		if(!$results->CreatedCount() && !$results->UpdatedCount()) {
-			$message .= _t('ModelAdmin.NOIMPORT', "Nothing to import");
-		}
-
-		return $message;
 	}
 
 }

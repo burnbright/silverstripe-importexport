@@ -8,6 +8,11 @@ Users can choose which columns map to DataObject fields. This removes any need t
 
 Users can state if the first line of data is infact a heading row.
 
+Mapping process is now:
+```
+User's CSV file -maps-to-> columnMap -maps-to-> DataObject
+```
+
 ## Usage
 
 ### Grid Field Importer
@@ -26,6 +31,7 @@ Users can state if the first line of data is infact a heading row.
  * Optionally use DataObject 'defaults' values for empty cells
  * Cache selected column mapping for future uploads
  * Validate incoming data, and flag any issues
+    * Custom defined reasons for skipping records 
 
 ### Exporting
 
