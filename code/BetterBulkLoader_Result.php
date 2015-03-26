@@ -46,6 +46,13 @@ class BetterBulkLoader_Result extends BulkLoader_Result {
 				array('count' => $this->DeletedCount())
 			);
 		}
+		if($this->SkippedCount()) {
+			$output['skipped'] =  _t(
+				'BulkLoader.SKIPPEDRECORDS', "Skipped {count} records.",
+				array('count' => $this->SkippedCount())
+			);
+		}
+
 		if(!$this->CreatedCount() && !$this->UpdatedCount()) {
 			$output['empty'] = _t('BulkLoader.NOIMPORT', "Nothing to import");
 		}

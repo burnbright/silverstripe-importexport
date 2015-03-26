@@ -47,8 +47,7 @@ class GridFieldImporter_Request extends RequestHandler
 	 * @param GridField_URLHandler $component
 	 * @param RequestHandler $handler
 	 */
-	public function __construct($gridField, $component, $handler)
-	{
+	public function __construct($gridField, $component, $handler) {
 		$this->gridField = $gridField;
 		$this->component = $component;
 		$this->requestHandler = $handler;		
@@ -60,8 +59,7 @@ class GridFieldImporter_Request extends RequestHandler
 	 * 
 	 * @return UploadField UploadField instance as defined in the component
 	 */
-	public function getUploadField()
-	{
+	public function getUploadField() {
 		return $this->component->getUploadField($this->gridField);
 	}
 
@@ -70,8 +68,7 @@ class GridFieldImporter_Request extends RequestHandler
 	 * @param  SS_HTTPRequest $request
 	 * @return string
 	 */
-	public function upload(SS_HTTPRequest $request)
-	{
+	public function upload(SS_HTTPRequest $request) {
 
 		$field = $this->getUploadField();
 		$uploadResponse = $field->upload($request);
@@ -81,7 +78,10 @@ class GridFieldImporter_Request extends RequestHandler
 		$body = array_shift($body);
 
 		//add extra data
-		$body['import_url'] = $this->gridField->Link('importer/preview')."/".$body['id'];
+		$body['import_url'] = Controller::join_links(
+			$this->Link('preview'), $body['id']
+		);
+
 		//don't return buttons at all
 		unset($body['buttons']);
 
@@ -96,8 +96,7 @@ class GridFieldImporter_Request extends RequestHandler
 	 * @param  SS_HTTPRequest $request
 	 * @return string
 	 */
-	public function preview(SS_HTTPRequest $request)
-	{
+	public function preview(SS_HTTPRequest $request) {
 
 		$file = File::get()
 			->byID($request->param('FileID'));
@@ -122,8 +121,7 @@ class GridFieldImporter_Request extends RequestHandler
 			'MapperForm'=> $form
 		))->renderWith('GridFieldImporter_preview');
 		
-		//$controller = $this->getToplevelController();
-		$controller = Controller::curr();
+		$controller = $this->getToplevelController();
 		
 		return $controller->customise(array(
 			'Content' => $content
@@ -131,19 +129,16 @@ class GridFieldImporter_Request extends RequestHandler
 
 	}
 
-	public function MapperForm(){
-
+	public function MapperForm() {
 		$fields = new FieldList(
 			CheckboxField::create("HasHeader",
 				"This CSV file includes a header row"
 			)
 		);
-
 		$actions = new FieldList(
 			new FormAction("import", "Import CSV"),
 			new FormAction("cancel", "Cancel")
 		);
-
 		$form = new Form($this, __FUNCTION__, $fields, $actions);
 
 		return $form;
@@ -155,16 +150,8 @@ class GridFieldImporter_Request extends RequestHandler
 	 * @return array
 	 */
 	protected function getMappableColumns() {
-		$class = $this->gridField->getModelClass();
-		$map = (array)singleton($class)->fieldLabels(false);
-
-		// $has_ones = singleton($this->objectClass)->has_one();
-		// $has_manys = singleton($this->objectClass)->has_many();
-		// $many_manys = singleton($this->objectClass)->many_many();
-		
-		// $spec['relations'] = (array)$has_ones + (array)$has_manys + (array)$many_manys;
-		
-		return $map;
+		return $this->component->getLoader($this->gridField)
+					->getMappableColumns();
 	}
 
 	/**
@@ -174,24 +161,21 @@ class GridFieldImporter_Request extends RequestHandler
 	public function import(SS_HTTPRequest $request) {
 
 		if($request->postVar('action_import')){
-
 			$file = File::get()
 				->byID($request->param('FileID'));
 			if(!$file){
 				return "file not found";
 			}
 			$colmap = Convert::raw2sql($request->postVar('mappings'));
-			
 			if($colmap){
-				$this->component->importFile(
+				$results = $this->importFile(
 					$file->getFullPath(),
-					$this->gridField,
 					$colmap
 				);
+				$this->gridField->getForm()
+					->sessionMessage($results->getMessage(), 'good');
 			}
-
 		}
-
 		$controller = $this->getToplevelController();
 
 		$url = method_exists($this->requestHandler, "Link") ?
@@ -202,12 +186,28 @@ class GridFieldImporter_Request extends RequestHandler
 	}
 
 	/**
+	 * Do the import using the configured importer.
+	 * @param  string $filepath
+	 * @param  array|null $colmap
+	 * @return BulkLoader_Result
+	 */
+	public function importFile($filepath, $colmap = null) {
+		$loader = $this->component->getLoader($this->gridField);
+		//set or merge in given col map
+		if(is_array($colmap)){
+			$loader->columnMap = $loader->columnMap ?
+				array_merge($loader->columnMap, $colmap) : $colmap;
+		}
+
+		return $loader->load($filepath);
+	}
+
+	/**
 	 * Pass fileexists request to UploadField
 	 * 
 	 * @link UploadField->fileexists()
 	 */
-	public function fileexists(SS_HTTPRequest $request)
-	{
+	public function fileexists(SS_HTTPRequest $request) {
 		$uploadField = $this->getUploadField();
 		return $uploadField->fileexists($request);
 	}

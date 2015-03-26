@@ -6,15 +6,18 @@
  */
 class BetterBulkLoaderTest extends SapphireTest {
 
-	protected static $fixture_file = '../../framework/tests/dev/CsvBulkLoaderTest.yml';
+	protected static $fixture_file = 'importexport/tests/fixtures/BetterBulkLoaderTest.yaml';
 
 	protected $extraDataObjects = array(
-		'CsvBulkLoaderTest_Team',
-		'CsvBulkLoaderTest_Player',
-		'CsvBulkLoaderTest_PlayerContract',
+		'BetterBulkLoaderTest_Team',
+		'BetterBulkLoaderTest_Player',
+		'BetterBulkLoaderTest_PlayerContract',
 	);
 
 	public function testMappableColumns() {
+		$loader = new CsvBetterBulkLoader('BetterBulkLoaderTest_Player');
+		$columns = $loader->getMappableColumns();
+
 		$this->markTestIncomplete("Finish me!");
 	}
 
@@ -26,7 +29,7 @@ class BetterBulkLoaderTest extends SapphireTest {
 	 * Test plain import with column auto-detection
 	 */
 	public function testLoad() {
-		$loader = new  BetterBulkLoader('CsvBulkLoaderTest_Player');
+		$loader = new  CsvBetterBulkLoader('BetterBulkLoaderTest_Player');
 		$filepath = FRAMEWORK_PATH . '/tests/dev/CsvBulkLoaderTest_PlayersWithHeader.csv';
 		$file = fopen($filepath, 'r');
 		$compareCount = $this->getLineCount($file);
@@ -38,7 +41,7 @@ class BetterBulkLoaderTest extends SapphireTest {
 		$this->assertEquals(4, $results->Count(), 'Test correct count of imported data');
 		
 		// Test that columns were correctly imported
-		$obj = DataObject::get_one("CsvBulkLoaderTest_Player", "\"FirstName\" = 'John'");
+		$obj = DataObject::get_one("BetterBulkLoaderTest_Player", "\"FirstName\" = 'John'");
 		$this->assertNotNull($obj);
 		$this->assertEquals("He's a good guy", $obj->Biography);
 		$this->assertEquals("1988-01-31", $obj->Birthday);
@@ -46,31 +49,12 @@ class BetterBulkLoaderTest extends SapphireTest {
 		
 		fclose($file);
 	}
-	
-	/** 
-	 * Test plain import with clear_table_before_import  
-	 	 */ 
-	public function testDeleteExistingRecords() {
-		$loader = new  BetterBulkLoader('CsvBulkLoaderTest_Player'); 
-		$filepath = FRAMEWORK_PATH . '/tests/dev/CsvBulkLoaderTest_PlayersWithHeader.csv'; 
-		$loader->deleteExistingRecords = true;
-		$results1 = $loader->load($filepath);
-		$this->assertEquals(4, $results1->Count(), 'Test correct count of imported data on first load'); 
-	
-		//delete existing data before doing second CSV import 
-		$results2 = $loader->load($filepath, '512MB', true);
-		//get all instances of the loaded DataObject from the database and count them
-		$resultDataObject = DataObject::get('CsvBulkLoaderTest_Player');  
-	
-		$this->assertEquals(4, $resultDataObject->Count(),
-			'Test if existing data is deleted before new data is added'); 
-		}
-	
+
 	/**
 	 * Test import with manual column mapping
 	 */
 	public function testLoadWithColumnMap() {
-		$loader = new  BetterBulkLoader('CsvBulkLoaderTest_Player');
+		$loader = new  CsvBetterBulkLoader('BetterBulkLoaderTest_Player');
 		$filepath = FRAMEWORK_PATH . '/tests/dev/CsvBulkLoaderTest_Players.csv';
 		$file = fopen($filepath, 'r');
 		$compareCount = $this->getLineCount($file);
@@ -89,24 +73,46 @@ class BetterBulkLoaderTest extends SapphireTest {
 		$this->assertEquals(4, $results->Count(), 'Test correct count of imported data');
 		
 		// Test that columns were correctly imported
-		$obj = DataObject::get_one("CsvBulkLoaderTest_Player", "\"FirstName\" = 'John'");
+		$obj = DataObject::get_one("BetterBulkLoaderTest_Player", "\"FirstName\" = 'John'");
 		$this->assertNotNull($obj);
 		$this->assertEquals("He's a good guy", $obj->Biography);
 		$this->assertEquals("1988-01-31", $obj->Birthday);
 		$this->assertEquals("1", $obj->IsRegistered);
 		
-		$obj2 = DataObject::get_one('CsvBulkLoaderTest_Player', "\"FirstName\" = 'Jane'");
+		$obj2 = DataObject::get_one('BetterBulkLoaderTest_Player', "\"FirstName\" = 'Jane'");
 		$this->assertNotNull($obj2);
 		$this->assertEquals('0', $obj2->IsRegistered);
 		
 		fclose($file);
 	}
 	
+	/** 
+	 * Test plain import with clear_table_before_import  
+	 */ 
+	public function testDeleteExistingRecords() {
+		$loader = new  CsvBetterBulkLoader('BetterBulkLoaderTest_Player'); 
+		$filepath = FRAMEWORK_PATH . '/tests/dev/CsvBulkLoaderTest_PlayersWithHeader.csv'; 
+		$loader->deleteExistingRecords = true;
+		$results1 = $loader->load($filepath);
+		$this->assertEquals(4, $results1->Count(),
+			'Test correct count of imported data on first load'
+		); 
+	
+		//delete existing data before doing second CSV import 
+		$results2 = $loader->load($filepath, '512MB', true);
+		//get all instances of the loaded DataObject from the database and count them
+		$resultDataObject = DataObject::get('BetterBulkLoaderTest_Player');  
+	
+		$this->assertEquals(4, $resultDataObject->Count(),
+			'Test if existing data is deleted before new data is added'
+		); 
+	}
+	
 	/**
 	 * Test import with manual column mapping and custom column names
 	 */
 	public function testLoadWithCustomHeaderAndRelation() {
-		$loader = new  BetterBulkLoader('CsvBulkLoaderTest_Player');
+		$loader = new  CsvBetterBulkLoader('BetterBulkLoaderTest_Player');
 		$filepath = FRAMEWORK_PATH . '/tests/dev/CsvBulkLoaderTest_PlayersWithCustomHeaderAndRelation.csv';
 		$file = fopen($filepath, 'r');
 		$compareCount = $this->getLineCount($file);
@@ -134,12 +140,12 @@ class BetterBulkLoaderTest extends SapphireTest {
 		$this->assertEquals(1, $results->Count(), 'Test correct count of imported data');
 		
 		// Test of augumenting existing relation (created by fixture)
-		$testTeam = DataObject::get_one('CsvBulkLoaderTest_Team', null, null, '"Created" DESC');
+		$testTeam = DataObject::get_one('BetterBulkLoaderTest_Team', null, null, '"Created" DESC');
 		$this->assertEquals('20', $testTeam->TeamSize, 'Augumenting existing has_one relation works');
 		
 		// Test of creating relation
-		$testContract = DataObject::get_one('CsvBulkLoaderTest_PlayerContract');
-		$testPlayer = Dataobject::get_one("CsvBulkLoaderTest_Player", "\"FirstName\" = 'John'");
+		$testContract = DataObject::get_one('BetterBulkLoaderTest_PlayerContract');
+		$testPlayer = Dataobject::get_one("BetterBulkLoaderTest_Player", "\"FirstName\" = 'John'");
 		$this->assertEquals($testPlayer->ContractID, $testContract->ID, 'Creating new has_one relation works');
 		
 		// Test nested setting of relation properties
@@ -157,7 +163,7 @@ class BetterBulkLoaderTest extends SapphireTest {
 	 */
 	public function testLoadWithIdentifiers() {
 		// first load
-		$loader = new  BetterBulkLoader('CsvBulkLoaderTest_Player');
+		$loader = new  CsvBetterBulkLoader('BetterBulkLoaderTest_Player');
 		$filepath = FRAMEWORK_PATH . '/tests/dev/CsvBulkLoaderTest_PlayersWithId.csv';
 		$loader->duplicateChecks = array(
 			'ExternalIdentifier' => 'ExternalIdentifier',
@@ -178,16 +184,22 @@ class BetterBulkLoaderTest extends SapphireTest {
 		$results = $loader->load($filepath);
 		
 		// HACK need to update the loaded record from the database
-		$player = DataObject::get_by_id('CsvBulkLoaderTest_Player', $player->ID);
+		$player = DataObject::get_by_id('BetterBulkLoaderTest_Player', $player->ID);
 		$this->assertEquals($player->FirstName, 'JohnUpdated', 'Test updating of existing records works');
 
 		// null values are valid imported
 		// $this->assertEquals($player->Biography, 'He\'s a good guy',
 		//	'Test retaining of previous information on duplicate when overwriting with blank field');
 	}
+
+	public function testDotNotationDuplicateChecks() {
+		
+		$this->markTestIncomplete("FINISH ME");
+		
+	}
 	
 	public function testLoadWithCustomImportMethods() {
-		$loader = new BetterBulkLoader_CustomLoader('CsvBulkLoaderTest_Player');
+		$loader = new BetterBulkLoaderTest_CustomLoader('BetterBulkLoaderTest_Player');
 		$filepath = FRAMEWORK_PATH . '/tests/dev/CsvBulkLoaderTest_PlayersWithHeader.csv';
 		$loader->columnMap = array(
 			'FirstName' => '->importFirstName',
@@ -204,7 +216,7 @@ class BetterBulkLoaderTest extends SapphireTest {
 	}
 	
 	public function testLoadWithCustomImportMethodDuplicateMap() {
-		$loader = new BetterBulkLoader_CustomLoader('CsvBulkLoaderTest_Player');
+		$loader = new BetterBulkLoaderTest_CustomLoader('BetterBulkLoaderTest_Player');
 		$filepath = FRAMEWORK_PATH . '/tests/dev/CsvBulkLoaderTest_PlayersWithHeader.csv';
 		$loader->columnMap = array(
 			'FirstName' => '->updatePlayer',
@@ -212,7 +224,6 @@ class BetterBulkLoaderTest extends SapphireTest {
 			'Birthday' => 'Birthday',
 			'IsRegistered' => 'IsRegistered'
 		);
-
 		$results = $loader->load($filepath);
 
 		$createdPlayers = $results->Created();
@@ -220,7 +231,6 @@ class BetterBulkLoaderTest extends SapphireTest {
 
 		$this->assertEquals($player->FirstName, "John. He's a good guy. ");
 	}
-
 
 	protected function getLineCount(&$file) {
 		$i = 0;
@@ -232,7 +242,7 @@ class BetterBulkLoaderTest extends SapphireTest {
 }
 
 
-class BetterBulkLoader_CustomLoader extends CsvBulkLoader implements TestOnly {
+class BetterBulkLoaderTest_CustomLoader extends CsvBulkLoader implements TestOnly {
 	public function importFirstName(&$obj, $val, $record) {
 		$obj->FirstName = "Customized {$val}";
 	}
@@ -242,7 +252,7 @@ class BetterBulkLoader_CustomLoader extends CsvBulkLoader implements TestOnly {
 	}
 }
 
-class BetterBulkLoader_Team extends DataObject implements TestOnly {
+class BetterBulkLoaderTest_Team extends DataObject implements TestOnly {
 	
 	private static $db = array(
 		'Title' => 'Varchar(255)',
@@ -250,12 +260,12 @@ class BetterBulkLoader_Team extends DataObject implements TestOnly {
 	);	
 	
 	private static $has_many = array(
-		'Players' => 'CsvBulkLoaderTest_Player',
+		'Players' => 'BetterBulkLoaderTest_Player',
 	);
 	
 }
 
-class BetterBulkLoader_Player extends DataObject implements TestOnly {
+class BetterBulkLoaderTest_Player extends DataObject implements TestOnly {
 
 	private static $db = array(
 		'FirstName' => 'Varchar(255)',
@@ -266,13 +276,21 @@ class BetterBulkLoader_Player extends DataObject implements TestOnly {
 	);
 	
 	private static $has_one = array(
-		'Team' => 'CsvBulkLoaderTest_Team',
-		'Contract' => 'CsvBulkLoaderTest_PlayerContract'
+		'Team' => 'BetterBulkLoaderTest_Team',
+		'Contract' => 'BetterBulkLoaderTest_PlayerContract'
 	);
 	
 	public function getTeamByTitle($title) {
 		$SQL_title = Convert::raw2sql($title);
-		return DataObject::get_one('CsvBulkLoaderTest_Team', "\"Title\" = '{$SQL_title}'");
+		return DataObject::get_one('BetterBulkLoaderTest_Team', "\"Title\" = '{$SQL_title}'");
+	}
+
+	protected function validate() {
+		$result = parent::validate();
+		if(!$this->FirstName){
+			$result->error("Players must have a FirstName");
+		}
+		return $result;
 	}
 	
 	/**
@@ -288,10 +306,8 @@ class BetterBulkLoader_Player extends DataObject implements TestOnly {
 }
 
 
-class BetterBulkLoader_PlayerContract extends DataObject implements TestOnly {
+class BetterBulkLoaderTest_PlayerContract extends DataObject implements TestOnly {
 	private static $db = array(
 		'Amount' => 'Currency',
 	);
 }
-
-
