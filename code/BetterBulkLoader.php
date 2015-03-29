@@ -15,13 +15,31 @@ class BetterBulkLoader extends BulkLoader {
 	 * Bulk loading source
 	 * @var BulkLoaderSource
 	 */
-	public $source;
+	protected $source;
 
 	/**
 	 * Specify a colsure to be run on every imported record.
 	 * @var Closure
 	 */
 	public $recordCallback;
+
+	/**
+	 * Set the BulkLoaderSource for this BulkLoader.
+	 * @param BulkLoaderSource $source
+	 */
+	public function setSource(BulkLoaderSource $source) {
+		$this->source = $source;
+
+		return $this;
+	}
+
+	/**
+	 * Get the BulkLoaderSource for this BulkLoader
+	 * @return BulkLoaderSource $source
+	 */
+	public function getSource() {
+		return $this->source;
+	}
 
 	/**
 	 * Get the field-label mapping of fields that data can be mapped into.
@@ -103,16 +121,13 @@ class BetterBulkLoader extends BulkLoader {
 		return sprintf("%s: %s", $relationship, $title);
 	}
 
-	protected function setSource(BulkLoaderSource $source) {
-		$this->source = $source;
-
-		return $this;
-	}
-
-	protected function getSource() {
-		return $this->source;
-	}
-
+	/**
+	 * Import all records from the source.
+	 * 
+	 * @param  string  $filepath
+	 * @param  boolean $preview 
+	 * @return BulkLoader_Result
+	 */
 	protected function processAll($filepath, $preview = false) {
 		$iterator = $this->getSource()->getIterator();
 		$results = new BetterBulkLoader_Result();
