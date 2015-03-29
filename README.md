@@ -1,4 +1,4 @@
-# WIP: SilverStripe Import/Export Module
+# SilverStripe Import/Export Module
 
 This module serves as a replacement for all SilverStripe importing and exporting.
 
@@ -8,33 +8,34 @@ Users can choose which columns map to DataObject fields. This removes any need t
 
 Users can state if the first line of data is infact a heading row.
 
-Mapping process is now:
-```
-User's CSV file -maps-to-> columnMap -maps-to-> DataObject
-```
+Mapping process is:
+**User's CSV file** *-maps-to->* **columnMap** *-maps-to->* **DataObject**
 
 ## Usage
 
 ### Grid Field Importer
+
+This is a grid field component for users to selecting a CSV file and map it's columns to data fields.
 
 ```php
     $importer = new GridFieldImporter('before');
     $gridConfig->addComponent($importer);
 ```
 
-## Future feature ideas
+The importer makes use of the `CSVFieldMapper`, which displays the beginning content of a CSV.
 
-### Importing
+### BulkLoaderSource
 
- * Choose mandatory columns
- * Auto-map columns that match loader fields
- * Optionally use DataObject 'defaults' values for empty cells
- * Cache selected column mapping for future uploads
- * Validate incoming data, and flag any issues
-    * Custom defined reasons for skipping records 
+A `BulkLoaderSource` provides an iterator to get record data from. Data could come from anywhere such as a CSV file, a web API, etc.
 
-### Exporting
+It can be used independently from the BulkLoader to obtain data.
 
- * Choose fields to export
- * Choose order of fields to export
- * Display a preview of export data
+### BulkLoader
+
+Saves data from a particular source and persists it to database via the ORM.
+Determines which fields can be mapped to, either scaffoleded from the model, provided by configuration, or both.
+
+Detects existing records, and either skips or updates them, based on criteria.
+Maps the source data to new/existing dataobjects, based on a given mapping.
+Finds, creates, and connects relation objects to objects.
+Can clear all records prior to processing.
