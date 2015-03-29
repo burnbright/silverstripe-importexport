@@ -15,6 +15,8 @@ class CsvBetterBulkLoader extends BetterBulkLoader{
 		$source = new CsvBulkLoaderSource($this);
 		$source->setFilePath($filepath);
 		$source->setHasHeader($this->hasHeaderRow);
+		$source->setFieldDelimiter($this->delimiter);
+		$source->setFieldEnclosure($this->enclosure);
 		$this->setSource($source);
 
 		return parent::processAll($filepath, $preview);
