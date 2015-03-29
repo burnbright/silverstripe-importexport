@@ -69,14 +69,20 @@ class BetterBulkLoader_Result extends BulkLoader_Result {
 		return implode("\n", $this->getMessageList());
 	}
 
+	/**
+	 * Provide a useful message type, based on result.
+	 * @return string
+	 */
 	public function getMessageType() {
-		//if only updated / added, then good
-		//if deleted, then warning
-		//if skipped, then warning
-		//if only skipped then bad
-		//if nothing happened, then bad
+		$type = "bad";
+		if($this->Count()){
+			$type = "good";
+		}
+		if($this->SkippedCount()){
+			$type= "warning";
+		}
 		
-		return "good";
+		return $type;
 	}
 
 }

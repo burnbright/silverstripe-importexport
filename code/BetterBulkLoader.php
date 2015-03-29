@@ -152,12 +152,12 @@ class BetterBulkLoader extends BulkLoader {
 		$class = $this->objectClass;
 
 		if(!$this->validateRecord($record)){
-			$results->addSkipped("Invalid record data.");
+			$results->addSkipped("Empty/invalid record data.");
 			return;
 		}
 		
 		// find existing object, or create new one
-		$existingObj = $this->findExistingObject($record, $columnMap);
+		$existingObj = $this->findExistingObject($record);
 		$obj = ($existingObj) ? $existingObj : new $class();
 
 		if($this->recordCallback){
@@ -208,7 +208,6 @@ class BetterBulkLoader extends BulkLoader {
 			if ($preview) {
 				break;
 			}
-
 			// look up the mapping to see if this needs to map to callback
 			$mapped = $this->columnMap && isset($this->columnMap[$fieldName]);
 			if($mapped && strpos($this->columnMap[$fieldName], '->') === 0) {
@@ -230,7 +229,7 @@ class BetterBulkLoader extends BulkLoader {
 				if($obj->isChanged()){
 					$results->addUpdated($obj);
 				}else{
-					$results->addSkipped();
+					$results->addSkipped("No data was changed.");
 				}
 			} else {
 				$results->addCreated($obj);
@@ -240,7 +239,6 @@ class BetterBulkLoader extends BulkLoader {
 		}
 		
 		$objID = $obj->ID;
-		
 		// reduce memory usage
 		$obj->destroy();
 		unset($existingObj);
