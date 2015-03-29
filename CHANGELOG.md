@@ -10,7 +10,7 @@
 ## Bug Fixes
 
 * Validation failing on DataObject->write() will cause a record to be skipped, rather than halting the whole process.
-
+* Prevented bulk loader from trying to work with relation names that don't exist. This would particularly cause issues when CSV header names contained a ".".
 
 ## Upgrading Notes
 
