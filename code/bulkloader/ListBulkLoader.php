@@ -23,24 +23,28 @@ class ListBulkLoader extends BetterBulkLoader {
 		return $this;
 	}
 
+	public function getList(){
+		return $this->getList();
+	}
+
 	/**
 	 * Add records to the list.
 	 */
 	protected function processAll($filepath, $preview = false) {
 		$iterator = $this->getSource()->getIterator();
 		$results = new BetterBulkLoader_Result();
-
 		foreach($iterator as $record) {
 			if($id = $this->processRecord($record, $this->columnMap, $results, $preview)){
 				$this->list->add($id);
 			}
 		}
 		
-		
-
 		return $results;
 	}
 
+	/**
+	 * Override the default deleteExistingRecords method.
+	 */
 	public function deleteExistingRecords(){
 		$this->list->removeAll();
 	}

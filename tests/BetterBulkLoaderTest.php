@@ -241,7 +241,6 @@ class BetterBulkLoaderTest extends SapphireTest {
 	
 }
 
-
 class BetterBulkLoaderTest_CustomLoader extends CsvBulkLoader implements TestOnly {
 	public function importFirstName(&$obj, $val, $record) {
 		$obj->FirstName = "Customized {$val}";
