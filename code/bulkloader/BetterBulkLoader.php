@@ -24,6 +24,12 @@ class BetterBulkLoader extends BulkLoader {
 	public $recordCallback;
 
 	/**
+	 * Write new relations to DB when they don't exist.
+	 * @var boolean
+	 */
+	protected $writeNewRelations = true;
+
+	/**
 	 * Set the BulkLoaderSource for this BulkLoader.
 	 * @param BulkLoaderSource $source
 	 */
@@ -63,10 +69,8 @@ class BetterBulkLoader extends BulkLoader {
 	 * @return array
 	 */
 	public function scaffoldMappableFields($includerelations = true) {
-
 		$map = $this->getMappableFieldsForClass($this->objectClass);
-
-		//set up Relation.Field style mappings
+		//set up 'dot notation' (Relation.Field) style mappings
 		if($includerelations){
 			if($has_ones = singleton($this->objectClass)->has_one()){
 				foreach($has_ones as $relationship => $type){
@@ -119,6 +123,23 @@ class BetterBulkLoader extends BulkLoader {
 	protected function formatMappingFieldLabel($relationship, $title){
 		//TODO: allow customisation
 		return sprintf("%s: %s", $relationship, $title);
+	}
+
+	public function load($filepath = null) {
+		//TODO: remove this stuff out?
+		increase_time_limit_to(3600);
+		increase_memory_limit_to('512M');
+		
+		if($this->deleteExistingRecords) {
+			//TODO: report on # records deleted
+			$this->deleteExistingRecords();
+		}
+		
+		return $this->processAll($filepath);
+	}
+
+	public function deleteExistingRecords(){
+		DataObject::get($this->objectClass)->removeAll();
 	}
 
 	/**
@@ -195,7 +216,14 @@ class BetterBulkLoader extends BulkLoader {
 			//set relation id on obj
 			if($relationObj){
 				//write new relation to db
-				if (!$preview && !$relationObj->isInDB()){
+				if (
+					($this->writeNewRelations || (
+						isset($this->relationCallbacks[$fieldName]['writeNew']) && 
+						$this->relationCallbacks[$fieldName]['writeNew']
+					)) && 
+					!$relationObj->isInDB() && 
+					!$preview
+				){
 					$relationObj->write();
 				}
 				$obj->{"{$relationName}ID"} = $relationObj->ID;
@@ -221,12 +249,13 @@ class BetterBulkLoader extends BulkLoader {
 			}
 		}
 
+		$changed = $obj->isChanged();
 		try{
 			// write record
 			($preview) ? 0 : $obj->write();
 			// save to results
 			if($existingObj) {
-				if($obj->isChanged()){
+				if($changed){
 					$results->addUpdated($obj);
 				}else{
 					$results->addSkipped("No data was changed.");
@@ -237,7 +266,7 @@ class BetterBulkLoader extends BulkLoader {
 		}catch(ValidationException $e) {
 			$results->addSkipped($e->getMessage());
 		}
-		
+
 		$objID = $obj->ID;
 		// reduce memory usage
 		$obj->destroy();
@@ -298,7 +327,7 @@ class BetterBulkLoader extends BulkLoader {
 		foreach($this->duplicateChecks as $fieldName => $duplicateCheck) {
 
 			if(is_string($duplicateCheck)) {
-				$field = Convert::raw2sql($duplicateCheck); 
+				$field = Convert::raw2sql($duplicateCheck);
 				if(!isset($record[$field]) || empty($record[$field])) {
 					//skip current duplicate check if field value is empty
 					continue;
@@ -319,15 +348,15 @@ class BetterBulkLoader extends BulkLoader {
 				} else {
 					user_error("BulkLoader::processRecord():"
 							. " {$duplicateCheck['callback']} not found on importer or object class.",
-						E_USER_ERROR
+						E_USER_WARNING
 					);
 				}
 				if($existingRecord) {
 					return $existingRecord;
 				}
-			} else {
+			}else {
 				user_error('BulkLoader::processRecord(): Wrong format for $duplicateChecks',
-					E_USER_ERROR
+					E_USER_WARNING
 				);
 			}
 		}

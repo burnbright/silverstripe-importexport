@@ -8,12 +8,6 @@
  */
 abstract class BulkLoaderSource{
 
-	protected $loader;
-
-	public final function __construct(BulkLoader $loader){
-		$this->loader = $loader;
-	}
-
 	/**
 	 * Provide iterator for bulk loading from.
 	 * Records are expected to be 1 dimensional key-value arrays.
@@ -76,6 +70,7 @@ class CsvBulkLoaderSource extends BulkLoaderSource{
 			$this->enclosure
 		);
 
+/*		
 		// ColumnMap has two uses, depending on whether hasheader is set
 		if($colmap = $this->loader->columnMap) {
 			// if the map goes to a callback, use the same key value as the map
@@ -90,9 +85,37 @@ class CsvBulkLoaderSource extends BulkLoaderSource{
 			} else {
 				$parser->provideHeaderRow($map);
 			}
-		}
+		}*/
 
 		return $parser;
+	}
+
+}
+
+/**
+ * Array bulk loader source
+ * Useful for testing bulk loader.
+ */
+class ArrayBulkLoaderSource extends BulkLoaderSource{
+
+	protected $data;
+
+	public function __construct($data) {
+		$this->data = $data;
+	}
+
+	public function getIterator() {
+		return $this->data;
+	}
+
+	public function setData($data){
+		$this->data = $data;
+
+		return $this;
+	}
+
+	public function getData(){
+		return $this->data;
 	}
 
 }

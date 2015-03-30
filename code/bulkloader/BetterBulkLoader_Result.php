@@ -6,6 +6,12 @@
 class BetterBulkLoader_Result extends BulkLoader_Result {
 
 	/**
+	 * Keep track of skipped records.
+	 * @var array
+	 */
+	protected $skipped = array();
+
+	/**
 	 * @return int
 	 */
 	public function SkippedCount() {
