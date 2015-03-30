@@ -4,8 +4,9 @@
 
 * Users can define column mappings via the CSVFieldMapper class.
 * CSV files can be previewed via the CSVPreviewer class.
-* Records can be skipped during import.
+* Records can be skipped during import. Skipped records are recorded in result object.
 * Introduced BulkLoaderSource as a way of abstracting CSV / other source functionality away from the BulkLoader class.
+* Introduced ListBulkLoader for confining record CRUD actions to a given DataList (HasManyList).
 
 ## Bug Fixes
 
