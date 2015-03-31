@@ -12,11 +12,6 @@
 					<% end_loop %>
 				</tr>
 			<% end_if %>
-<%-- 			<% if Headings %><tr>
-				<% loop Headings %>
-					<th>$Label</th>
-				<% end_loop %>
-			</tr><% end_if %> --%>
 		</thead>
 		<tbody>
 			<% loop Rows %>

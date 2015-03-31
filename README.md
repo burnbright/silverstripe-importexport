@@ -34,13 +34,13 @@ It can be used independently from the BulkLoader to obtain data.
 
 ```php
 $source = new CsvBulkLoaderSource();
-$source->setFilePath("files/myfile.csv");
-$source->setHasHeader(true);
-$source->setFieldDelimiter(",");
-$source->setFieldEnclosure("'");
+$source->setFilePath("files/myfile.csv")
+    ->setHasHeader(true)
+    ->setFieldDelimiter(",")
+    ->setFieldEnclosure("'");
 ```
 
-### BulkLoader
+### (Better)BulkLoader
 
 Saves data from a particular source and persists it to database via the ORM.
 Determines which fields can be mapped to, either scaffoleded from the model, provided by configuration, or both.
@@ -75,3 +75,15 @@ $loader->setSource($source);
 
 $result = $loader->load();
 ```
+
+## Contributions
+
+Please do contribute whatever you can to this module.
+
+## License
+
+MIT
+
+## Author
+
+Jeremy Shipman (http://jeremyshipman.com)
