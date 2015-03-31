@@ -96,7 +96,6 @@ class BetterBulkLoader extends BulkLoader {
 	 * @return int|null
 	 */
 	protected function processRecord($record, $columnMap, &$results, $preview = false) {
-		
 		if(!$this->validateRecord($record)){
 			$results->addSkipped("Empty/invalid record data.");
 			return;
@@ -241,6 +240,7 @@ class BetterBulkLoader extends BulkLoader {
 				$map[$k] = $v;
 			}
 		}
+
 		return $map;
 	}
 
