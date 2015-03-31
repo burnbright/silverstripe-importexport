@@ -1,6 +1,7 @@
 {
     "name": "burnbright/silverstripe-importexport",
     "description": "An upgrade to SilverStripe's bulk loading and exporting",
+    "type": "silverstripe-module",
     "license": "MIT",
     "keywords": ["csv","import","bulkload","export","data"],
     "authors": [
