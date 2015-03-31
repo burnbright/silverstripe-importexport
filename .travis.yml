@@ -15,6 +15,11 @@ env:
     - DB=SQLITE
     - DB=PGSQL 
 
+matrix:
+  allow_failures:
+    - php: hhvm
+      env: DB=PGSQL
+
 before_script:
   - composer self-update
   - phpenv rehash
