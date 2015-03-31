@@ -2,7 +2,7 @@
 
 ## New Features
 
-* Users can define column mappings via the CSVFieldMapper class.
+* Users can define column mappings via CSVFieldMapper / GridFieldImporter.
 * CSV files can be previewed via the CSVPreviewer class.
 * Records can be skipped during import. Skipped records are recorded in result object.
 * Introduced BulkLoaderSource as a way of abstracting CSV / other source functionality away from the BulkLoader class.

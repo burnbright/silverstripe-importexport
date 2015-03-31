@@ -1,7 +1,8 @@
 <?php
 
 /**
- * Backwards copatible CsvBulkLoader - api equivelant to CSVBulkLoader
+ * Backwards copatible CsvBulkLoader
+ * Almost api equivelant to CSVBulkLoader
  */
 class CsvBetterBulkLoader extends BetterBulkLoader{
 

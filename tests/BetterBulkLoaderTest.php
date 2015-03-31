@@ -164,7 +164,7 @@ class BetterBulkLoaderTest extends SapphireTest {
 	 */
 	public function testLoadWithIdentifiers() {
 		// first load
-		$loader = new  CsvBetterBulkLoader('BetterBulkLoaderTest_Player');
+		$loader = new CsvBetterBulkLoader('BetterBulkLoaderTest_Player');
 		$filepath = FRAMEWORK_PATH . '/tests/dev/CsvBulkLoaderTest_PlayersWithId.csv';
 		$loader->duplicateChecks = array(
 			'ExternalIdentifier' => 'ExternalIdentifier',
