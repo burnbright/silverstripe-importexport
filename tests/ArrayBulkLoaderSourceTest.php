@@ -10,7 +10,12 @@ class ArrayBulkLoaderSourceTest extends SapphireTest{
 		);
 		$source = new ArrayBulkLoaderSource($data);
 		$iterator = $source->getIterator();
-		$this->assertEquals(2, count($iterator));
+		
+		$count = 0;
+		foreach($iterator as $record) {
+			$this->assertEquals($data[$count], $record);
+			$count++;
+		}
 	}
 
 }

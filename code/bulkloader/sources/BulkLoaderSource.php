@@ -6,7 +6,7 @@
  * 
  * Useful for holiding source configuration state.
  */
-abstract class BulkLoaderSource{
+abstract class BulkLoaderSource implements IteratorAggregate{
 
 	/**
 	 * Provide iterator for bulk loading from.

@@ -13,7 +13,7 @@ class ArrayBulkLoaderSource extends BulkLoaderSource{
 	}
 
 	public function getIterator() {
-		return $this->data;
+		return new ArrayIterator($this->data);
 	}
 
 	public function setData($data){
