@@ -11,7 +11,9 @@
         }
     ],
     "require": {
-        "goodby/csv": "1.2.x"
+        "goodby/csv": "1.2.x",
+        "silverstripe/framework": "3.1.x",
+        "silverstripe/cms": "3.1.x"
     },
      "extra": {
         "installer-name": "importexport"
