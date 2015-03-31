@@ -79,7 +79,14 @@ class CsvBulkLoaderSource extends BulkLoaderSource{
 		$interpreter->unstrict();
 		$interpreter->addObserver(function(array $row) use (&$output, $header) {
 			if($header){
-				$row = array_combine($header, $row);
+				//create new row using headings as keys
+				$newrow = array();
+				foreach($header as $k => $heading){
+					if(isset($row[$k])){
+						$newrow[$heading] = $row[$k];
+					}
+				}
+				$row = $newrow;
 			}
 			$output[] = $row;
 		});
@@ -90,7 +97,7 @@ class CsvBulkLoaderSource extends BulkLoaderSource{
 		return new ArrayIterator($output);
 	}
 
-	protected function getFirstRow(){
+	public function getFirstRow(){
 		$handle = fopen($this->filepath,'r');
 		$header = fgetcsv(
 			$handle, 

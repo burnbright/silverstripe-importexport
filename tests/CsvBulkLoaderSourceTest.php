@@ -49,12 +49,12 @@ class CsvBulkLoaderSourceTest extends SapphireTest{
 			->setHasHeader(true);
 
 		$rowassertions = array(
-			array("John", "He's a good guy", "ignored", "31/01/1988", "1"),
-			array("Jane", "She is awesome.\\nSo awesome that she gets multiple rows and \\\"escaped\\\" strings in her biography", "ignored", "31/01/1982", "0"),
-			array("Jamie","Pretty old\, with an escaped comma","ignored","31/01/1882","1"),
-			array("Järg","Unicode FTW","ignored","31/06/1982","1"),
+			array("FirstName"=>"John", "Biography"=>"He's a good guy", "Ignore"=>"ignored", "Birthday"=>"31/01/1988", "IsRegistered"=>"1"),
+			array("FirstName"=>"Jane", "Biography"=>"She is awesome.\\nSo awesome that she gets multiple rows and \\\"escaped\\\" strings in her biography", "Ignore"=>"ignored", "Birthday"=>"31/01/1982", "IsRegistered"=>"0"),
+			array("FirstName"=>"Jamie","Biography"=>"Pretty old\, with an escaped comma","Ignore"=>"ignored","Birthday"=>"31/01/1882","IsRegistered"=>"1"),
+			array("FirstName"=>"Järg","Biography"=>"Unicode FTW","Ignore"=>"ignored","Birthday"=>"31/06/1982","IsRegistered"=>"1"),
 			//empty rows are skipped by default
-			array("","nobio missing data","ignored")
+			array("FirstName"=>"","Biography"=>"nobio missing data","Ignore"=>"ignored")
 		);
 
 		$iterator = $source->getIterator();
@@ -69,12 +69,9 @@ class CsvBulkLoaderSourceTest extends SapphireTest{
 		}
 		
 		//assert header is correct
-		$iterator->rewind();
-		$first = $iterator->current();
-
 		$this->assertEquals(
-			$first,
-			array("FirstName","Biography","Birthday","Ignore","IsRegistered")
+			$source->getFirstRow(),
+			array("FirstName","Biography","Ignore","Birthday","IsRegistered")
 		);
 	}
 	

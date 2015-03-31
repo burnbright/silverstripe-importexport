@@ -1,4 +1,4 @@
-"FirstName","Biography","Birthday","Ignore","IsRegistered"
+"FirstName","Biography","Ignore","Birthday","IsRegistered"
 "John","He's a good guy","ignored","31/01/1988","1"
 "Jane","She is awesome.\nSo awesome that she gets multiple rows and \"escaped\" strings in her biography","ignored","31/01/1982","0"
 "Jamie","Pretty old\, with an escaped comma","ignored","31/01/1882","1"
