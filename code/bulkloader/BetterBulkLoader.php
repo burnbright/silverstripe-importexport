@@ -47,91 +47,13 @@ class BetterBulkLoader extends BulkLoader {
 		return $this->source;
 	}
 
-	/**
-	 * Get the field-label mapping of fields that data can be mapped into.
-	 * @return array
-	 */
-	public function getMappableColumns() {
-
-		//TODO: allow defining a subset of allowed mappings/columns
-		//extract fields from:
-			//column map
-			//relationcallbacks
-			//duplicate checks
-			//..and get human readable titles
-		
-		return $this->scaffoldMappableFields();
-	}
-
-	/**
-	 * Generate a field-label list of fields that data can be mapped into.
-	 * @param $includerelations
-	 * @return array
-	 */
-	public function scaffoldMappableFields($includerelations = true) {
-		$map = $this->getMappableFieldsForClass($this->objectClass);
-		//set up 'dot notation' (Relation.Field) style mappings
-		if($includerelations){
-			if($has_ones = singleton($this->objectClass)->has_one()){
-				foreach($has_ones as $relationship => $type){
-					$fields = $this->getMappableFieldsForClass($type);
-					foreach($fields as $field => $title){
-						$map[$relationship.".".$field] = 
-							$this->formatMappingFieldLabel($relationship,$title);
-					}
-				}
-			}
-			if($has_manys = singleton($this->objectClass)->has_one()){
-				foreach($has_manys as $relationship => $type){
-					$fields = $this->getMappableFieldsForClass($type);
-					foreach($fields as $field => $title){
-						$map[$relationship.".".$field] = 
-							$this->formatMappingFieldLabel($relationship,$title);
-					}
-				}
-			}
-			if($many_manys = singleton($this->objectClass)->has_one()){
-				foreach($many_manys as $relationship => $type){
-					$fields = $this->getMappableFieldsForClass($type);
-					foreach($fields as $field => $title){
-						$map[$relationship.".".$field] = 
-							$this->formatMappingFieldLabel($relationship,$title);
-					}
-				}
-			}
-		}
-
-		return $map;
-	}
-
-	/**
-	 * Get the fields and labels for a given class, sorted naturally.
-	 * @param  string $class
-	 * @return array fields
-	 */
-	protected function getMappableFieldsForClass($class) {
-		$fields = (array)singleton($class)->fieldLabels(false);
-		natcasesort($fields);
-		return $fields;
-	}
-
-	/**
-	 * Format mapping field laabel
-	 * @param  string $relationship
-	 * @param  string $title
-	 */
-	protected function formatMappingFieldLabel($relationship, $title){
-		//TODO: allow customisation
-		return sprintf("%s: %s", $relationship, $title);
-	}
-
 	public function load($filepath = null) {
 		//TODO: remove this stuff out?
 		increase_time_limit_to(3600);
 		increase_memory_limit_to('512M');
 		
 		if($this->deleteExistingRecords) {
-			//TODO: report on # records deleted
+			//TODO: report on number of records deleted
 			$this->deleteExistingRecords();
 		}
 		
@@ -362,6 +284,84 @@ class BetterBulkLoader extends BulkLoader {
 		}
 
 		return false;
+	}
+
+	/**
+	 * Get the field-label mapping of fields that data can be mapped into.
+	 * @return array
+	 */
+	public function getMappableColumns() {
+
+		//TODO: allow defining a subset of allowed mappings/columns
+		//extract fields from:
+			//column map
+			//relationcallbacks
+			//duplicate checks
+			//..and get human readable titles
+		
+		return $this->scaffoldMappableFields();
+	}
+
+	/**
+	 * Generate a field-label list of fields that data can be mapped into.
+	 * @param $includerelations
+	 * @return array
+	 */
+	public function scaffoldMappableFields($includerelations = true) {
+		$map = $this->getMappableFieldsForClass($this->objectClass);
+		//set up 'dot notation' (Relation.Field) style mappings
+		if($includerelations){
+			if($has_ones = singleton($this->objectClass)->has_one()){
+				foreach($has_ones as $relationship => $type){
+					$fields = $this->getMappableFieldsForClass($type);
+					foreach($fields as $field => $title){
+						$map[$relationship.".".$field] = 
+							$this->formatMappingFieldLabel($relationship,$title);
+					}
+				}
+			}
+			if($has_manys = singleton($this->objectClass)->has_one()){
+				foreach($has_manys as $relationship => $type){
+					$fields = $this->getMappableFieldsForClass($type);
+					foreach($fields as $field => $title){
+						$map[$relationship.".".$field] = 
+							$this->formatMappingFieldLabel($relationship,$title);
+					}
+				}
+			}
+			if($many_manys = singleton($this->objectClass)->has_one()){
+				foreach($many_manys as $relationship => $type){
+					$fields = $this->getMappableFieldsForClass($type);
+					foreach($fields as $field => $title){
+						$map[$relationship.".".$field] = 
+							$this->formatMappingFieldLabel($relationship,$title);
+					}
+				}
+			}
+		}
+
+		return $map;
+	}
+
+	/**
+	 * Get the fields and labels for a given class, sorted naturally.
+	 * @param  string $class
+	 * @return array fields
+	 */
+	protected function getMappableFieldsForClass($class) {
+		$fields = (array)singleton($class)->fieldLabels(false);
+		natcasesort($fields);
+		return $fields;
+	}
+
+	/**
+	 * Format mapping field laabel
+	 * @param  string $relationship
+	 * @param  string $title
+	 */
+	protected function formatMappingFieldLabel($relationship, $title){
+		//TODO: allow customisation
+		return sprintf("%s: %s", $relationship, $title);
 	}
 
 }
