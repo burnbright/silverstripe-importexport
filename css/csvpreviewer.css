@@ -11,6 +11,7 @@
 }
 
 .csvpreviewer{
+	/* find out how to fill the width and scroll the overflow*/
 	width: 820px;
 	max-width: 100%;
 	overflow-x: scroll;
@@ -24,9 +25,18 @@
 	padding: 3px;
 }
 
+.csvpreviewer table select{
+	max-width: 10em;
+}
+
 .csvpreviewer table td{
 	border: 1px solid #ccc;
 	border-collapse: collapse;
 	padding: 5px;
 	background: #fff;
+}
+
+#HasHeader,
+#ClearData{
+	padding-left: 5px;
 }

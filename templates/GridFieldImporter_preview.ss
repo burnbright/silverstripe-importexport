@@ -5,5 +5,7 @@
 			Previewing import of <em>$File.Name</em>
 		</h2>
 	</div>
-	$MapperForm
+	<div class="cms-content-fields center">
+		$MapperForm
+	</div>
 </div>
