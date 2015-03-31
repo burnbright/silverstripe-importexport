@@ -23,6 +23,7 @@ class ListBulkLoader extends BetterBulkLoader {
 		return $this;
 	}
 
+	
 	public function getList(){
 		return $this->getList();
 	}
@@ -45,8 +46,12 @@ class ListBulkLoader extends BetterBulkLoader {
 	/**
 	 * Override the default deleteExistingRecords method.
 	 */
-	public function deleteExistingRecords(){
-		$this->list->removeAll();
+	public function deleteExistingRecords() {
+		//TODO: allow chooosing between delete and remove(unlink)
+		foreach($this->list as $item) {
+			$item->delete();
+			$item->destroy();
+		}
 	}
 
 }
