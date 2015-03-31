@@ -31,11 +31,11 @@ A `BulkLoaderSource` provides an iterator to get record data from. Data could co
 It can be used independently from the BulkLoader to obtain data.
 
 ```php
-    $source = new CsvBulkLoaderSource();
-    $source->setFilePath("files/myfile.csv");
-    $source->setHasHeader(true);
-    $source->setFieldDelimiter(",");
-    $source->setFieldEnclosure("'");
+$source = new CsvBulkLoaderSource();
+$source->setFilePath("files/myfile.csv");
+$source->setHasHeader(true);
+$source->setFieldDelimiter(",");
+$source->setFieldEnclosure("'");
 ```
 
 ### BulkLoader
@@ -49,13 +49,27 @@ Finds, creates, and connects relation objects to objects.
 Can clear all records prior to processing.
 
 ```php
-    
-    $source = new CsvBulkLoaderSource();
-    $source->setFilePath("files/myfile.csv");
+$source = new CsvBulkLoaderSource();
+$source->setFilePath("files/myfile.csv");
 
-    $loader = new BetterBulkLoader("Product");
-    $loader->setSource($source);
+$loader = new BetterBulkLoader("Product");
+$loader->setSource($source);
 
-    $result = $loader->load();
+$result = $loader->load();
 ```
 
+### ListBulkLoader
+
+Often you'll want to confine bulk loading to a specific DataList. The ListBulkLoader is a varaition of BulkLoader that adds and removes records from a given DataList. Of course DataList iself doesn't have an add method implemented, so you'll probably find it more useful for a `HasManyList`.
+
+```
+$category = ProductCategory::get()->first();
+
+$source = new CsvBulkLoaderSource();
+$source->setFilePath("files/myfile.csv");
+
+$loader = new ListBulkLoader($category->Products());
+$loader->setSource($source);
+
+$result = $loader->load();
+`` 
