@@ -35,6 +35,7 @@ class BetterBulkLoaderTest extends SapphireTest {
 		$compareCount = $this->getLineCount($file);
 		fgetcsv($file); // pop header row
 		$compareRow = fgetcsv($file);
+
 		$results = $loader->load($filepath);
 	
 		// Test that right amount of columns was imported
@@ -193,9 +194,7 @@ class BetterBulkLoaderTest extends SapphireTest {
 	}
 
 	public function testDotNotationDuplicateChecks() {
-		
 		$this->markTestIncomplete("FINISH ME");
-		
 	}
 	
 	public function testLoadWithCustomImportMethods() {
@@ -242,6 +241,7 @@ class BetterBulkLoaderTest extends SapphireTest {
 }
 
 class BetterBulkLoaderTest_CustomLoader extends CsvBulkLoader implements TestOnly {
+	
 	public function importFirstName(&$obj, $val, $record) {
 		$obj->FirstName = "Customized {$val}";
 	}
@@ -302,11 +302,13 @@ class BetterBulkLoaderTest_Player extends DataObject implements TestOnly {
 	public function setUSBirthday($val, $record = null) {
 		$this->Birthday = preg_replace('/^([0-9]{1,2})\/([0-9]{1,2})\/([0-90-9]{2,4})/', '\\3-\\1-\\2', $val);
 	}
+
 }
 
-
 class BetterBulkLoaderTest_PlayerContract extends DataObject implements TestOnly {
+
 	private static $db = array(
 		'Amount' => 'Currency',
 	);
+
 }

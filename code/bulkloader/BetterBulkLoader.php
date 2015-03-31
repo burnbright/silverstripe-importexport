@@ -56,7 +56,7 @@ class BetterBulkLoader extends BulkLoader {
 			//TODO: report on number of records deleted
 			$this->deleteExistingRecords();
 		}
-		
+
 		return $this->processAll($filepath);
 	}
 
@@ -72,9 +72,13 @@ class BetterBulkLoader extends BulkLoader {
 	 * @return BulkLoader_Result
 	 */
 	protected function processAll($filepath, $preview = false) {
-		$iterator = $this->getSource()->getIterator();
+		if(!$this->source){
+			user_error("No source has been configured for the bulk loader",
+				E_USER_WARNING
+			);
+		}
 		$results = new BetterBulkLoader_Result();
-
+		$iterator = $this->getSource()->getIterator();
 		foreach($iterator as $record) {
 			$this->processRecord($record, $this->columnMap, $results, $preview);
 		}
@@ -92,15 +96,18 @@ class BetterBulkLoader extends BulkLoader {
 	 * @return int|null
 	 */
 	protected function processRecord($record, $columnMap, &$results, $preview = false) {
-		$class = $this->objectClass;
-
+		
 		if(!$this->validateRecord($record)){
 			$results->addSkipped("Empty/invalid record data.");
 			return;
 		}
-		
+		//map incoming record according to the columnMap
+		$record = $this->columnMapRecord($record);
+
 		// find existing object, or create new one
 		$existingObj = $this->findExistingObject($record);
+
+		$class = $this->objectClass;
 		$obj = ($existingObj) ? $existingObj : new $class();
 
 		if($this->recordCallback){
@@ -196,6 +203,45 @@ class BetterBulkLoader extends BulkLoader {
 		unset($obj);
 		
 		return $objID;
+	}
+
+	/**
+	 * Convert the record's keys to appropriate columnMap keys.
+	 * @return array record
+	 */
+	protected function columnMapRecord($record){
+		$adjustedmap = $this->getAdjustedMap();
+
+		$newrecord = array();
+		foreach($record as $field => $value){
+			if(isset($adjustedmap[$field])){
+				$newrecord[$adjustedmap[$field]] = $value;
+			}else{
+				$newrecord[$field] = $value;
+			}
+		}
+
+		return $newrecord;
+	}
+
+	/**
+	 * If the mapping goes to a "->" callback,
+	 * then 
+	 * 
+	 * if the map goes to a callback, use the same key value as the map
+	 * value, rather than function name as multiple keys may use the 
+	 * same callback
+	 */
+	protected function getAdjustedMap(){
+		$map = array();
+		foreach($this->columnMap as $k => $v) {
+			if(strpos($v, "->") === 0) {
+				$map[$k] = $k;
+			} else {
+				$map[$k] = $v;
+			}
+		}
+		return $map;
 	}
 
 	/**

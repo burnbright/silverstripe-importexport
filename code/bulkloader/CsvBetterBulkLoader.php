@@ -10,9 +10,8 @@ class CsvBetterBulkLoader extends BetterBulkLoader{
 	public $hasHeaderRow = true;
 
 	protected function processAll($filepath, $preview = false) {
-
 		//configre a CsvBulkLoaderSource
-		$source = new CsvBulkLoaderSource($this);
+		$source = new CsvBulkLoaderSource();
 		$source->setFilePath($filepath);
 		$source->setHasHeader($this->hasHeaderRow);
 		$source->setFieldDelimiter($this->delimiter);

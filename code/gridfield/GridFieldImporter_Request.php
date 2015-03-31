@@ -198,8 +198,9 @@ class GridFieldImporter_Request extends RequestHandler
 			$loader->columnMap = $loader->columnMap ?
 				array_merge($loader->columnMap, $colmap) : $colmap;
 		}
+		$loader->getSource()->setFilePath($filepath);
 
-		return $loader->load($filepath);
+		return $loader->load();
 	}
 
 	/**

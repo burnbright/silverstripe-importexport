@@ -30,6 +30,14 @@ A `BulkLoaderSource` provides an iterator to get record data from. Data could co
 
 It can be used independently from the BulkLoader to obtain data.
 
+```php
+    $source = new CsvBulkLoaderSource();
+    $source->setFilePath("files/myfile.csv");
+    $source->setHasHeader(true);
+    $source->setFieldDelimiter(",");
+    $source->setFieldEnclosure("'");
+```
+
 ### BulkLoader
 
 Saves data from a particular source and persists it to database via the ORM.
@@ -39,3 +47,15 @@ Detects existing records, and either skips or updates them, based on criteria.
 Maps the source data to new/existing dataobjects, based on a given mapping.
 Finds, creates, and connects relation objects to objects.
 Can clear all records prior to processing.
+
+```php
+    
+    $source = new CsvBulkLoaderSource();
+    $source->setFilePath("files/myfile.csv");
+
+    $loader = new BetterBulkLoader("Product");
+    $loader->setSource($source);
+
+    $result = $loader->load();
+```
+

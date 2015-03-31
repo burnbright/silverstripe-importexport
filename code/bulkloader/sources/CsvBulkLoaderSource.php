@@ -1,5 +1,9 @@
 <?php
 
+use Goodby\CSV\Import\Standard\Interpreter;
+use Goodby\CSV\Import\Standard\Lexer;
+use Goodby\CSV\Import\Standard\LexerConfig;
+
 /**
  * CSV file bulk loading source
  */
@@ -12,8 +16,6 @@ class CsvBulkLoaderSource extends BulkLoaderSource{
 	protected $enclosure = '"';
 
 	protected $hasheader = true;
-
-	protected $columnMap;
 
 	public function setFilePath($path) {
 		$this->filepath = $path;
@@ -55,16 +57,6 @@ class CsvBulkLoaderSource extends BulkLoaderSource{
 		return $this->hasheader;
 	}
 
-	public function setColumnMap($map) {
-		$this->columnMap = $map;
-
-		return $this;
-	}
-
-	public function getColumnMap() {
-		return $this->columnMap;
-	}
-
 	/**
 	 * Get a new CSVParser using defined settings.
 	 * @return Iterator
@@ -74,22 +66,41 @@ class CsvBulkLoaderSource extends BulkLoaderSource{
 			//TODO: throw exception instead?
 			return null;
 		}
+		$header = $this->hasheader ? $this->getFirstRow() : null;
+		$output = array();
 
-		$parser = new CSVParser(
-			$this->filepath, 
+		$config = new LexerConfig();
+		$config->setDelimiter($this->delimiter);
+		$config->setEnclosure($this->enclosure);
+		$config->setIgnoreHeaderLine($this->hasheader);
+
+		$interpreter = new Interpreter();
+		// Ignore row column count consistency
+		$interpreter->unstrict();
+		$interpreter->addObserver(function(array $row) use (&$output, $header) {
+			if($header){
+				$row = array_combine($header, $row);
+			}
+			$output[] = $row;
+		});
+
+		$lexer = new Lexer($config);
+		$lexer->parse($this->filepath, $interpreter);
+
+		return new ArrayIterator($output);
+	}
+
+	protected function getFirstRow(){
+		$handle = fopen($this->filepath,'r');
+		$header = fgetcsv(
+			$handle, 
+			0, 
 			$this->delimiter, 
 			$this->enclosure
 		);
+		fclose($handle);
 
-		if($this->columnMap){
-			if($this->hasheader) {
-				$parser->mapColumns($this->columnMap);
-			} else {
-				$parser->provideHeaderRow($this->columnMap);
-			}
-		}
-
-		return $parser;
+		return $header;
 	}
 
 }
