@@ -1,6 +1,8 @@
 # SilverStripe Import/Export Module
 
-This module serves as a replacement for all SilverStripe importing and exporting.
+[![Build Status](https://travis-ci.org/burnbright/silverstripe-importexport.svg?branch=master)](https://travis-ci.org/burnbright/silverstripe-importexport)
+
+Import and export data from SilverStripe in various forms, including CSV. This module serves as a replacement/overhaul of BulkLoader functionality found in framework.
 
 ## User-defined column mapping
 
@@ -18,8 +20,8 @@ Mapping process is:
 This is a grid field component for users to selecting a CSV file and map it's columns to data fields.
 
 ```php
-    $importer = new GridFieldImporter('before');
-    $gridConfig->addComponent($importer);
+$importer = new GridFieldImporter('before');
+$gridConfig->addComponent($importer);
 ```
 
 The importer makes use of the `CSVFieldMapper`, which displays the beginning content of a CSV.
@@ -66,7 +68,7 @@ Often you'll want to confine bulk loading to a specific DataList. The ListBulkLo
 $category = ProductCategory::get()->first();
 
 $source = new CsvBulkLoaderSource();
-$source->setFilePath("files/myfile.csv");
+$source->setFilePath("productlist.csv");
 
 $loader = new ListBulkLoader($category->Products());
 $loader->setSource($source);
