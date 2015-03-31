@@ -62,7 +62,7 @@ $result = $loader->load();
 
 Often you'll want to confine bulk loading to a specific DataList. The ListBulkLoader is a varaition of BulkLoader that adds and removes records from a given DataList. Of course DataList iself doesn't have an add method implemented, so you'll probably find it more useful for a `HasManyList`.
 
-```
+```php
 $category = ProductCategory::get()->first();
 
 $source = new CsvBulkLoaderSource();
@@ -72,4 +72,4 @@ $loader = new ListBulkLoader($category->Products());
 $loader->setSource($source);
 
 $result = $loader->load();
-`` 
+```
