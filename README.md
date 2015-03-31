@@ -38,6 +38,10 @@ $source->setFilePath("files/myfile.csv")
     ->setHasHeader(true)
     ->setFieldDelimiter(",")
     ->setFieldEnclosure("'");
+
+foreach($source->getIterator() as $record){
+    //do stuff
+}
 ```
 
 ### (Better)BulkLoader
