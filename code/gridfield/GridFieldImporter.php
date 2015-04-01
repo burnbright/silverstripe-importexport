@@ -23,6 +23,12 @@ class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler 
 	 */
 	protected $recordcallback;
 
+	/**
+	 * Can the user clear records
+	 * @var boolean
+	 */
+	protected $canClearData = true;
+
 	public function __construct($targetFragment = "after") {
 		$this->targetFragment = $targetFragment;
 	}
@@ -46,6 +52,17 @@ class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler 
 		$this->recordcallback = $callback;
 
 		return $this;
+	}
+
+	/**
+	 * @param boolean $canclear
+	 */
+	public function setCanClearData($canclear = true) {
+		$this->canClearData = $canClearData;
+	}
+
+	public function getCanClearData() {
+		return $this->canClearData;
 	}
 
 	public function getHTMLFragments($gridField) {
