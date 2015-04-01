@@ -1,0 +1,7 @@
+NewBulkLoaderTest_Course:
+  math101:
+    Title: 'Math 101'
+  tech102:
+    Title: 'Tech 102'
+  mus103: 
+    Title: 'Music 103'
