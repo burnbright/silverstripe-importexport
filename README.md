@@ -82,7 +82,7 @@ $result = $loader->load();
 
 ## Contributions
 
-Please do contribute whatever you can to this module.
+Please do contribute whatever you can to this module. Check out the [issues](https://github.com/burnbright/silverstripe-importexport/issues) and [milestones](https://github.com/burnbright/silverstripe-importexport/milestones) to see what has needs to be done.
 
 ## License
 
