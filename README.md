@@ -4,14 +4,20 @@
 
 Import and export data from SilverStripe in various forms, including CSV. This module serves as a replacement/overhaul of BulkLoader functionality found in framework.
 
+## The loading process
+
+1. Raw data is retrieved from a source
+2. Data is provides as iterable rows.
+3. Rows are mapped to a standardised format, based on a user/developer provided mapping.
+4. Data is set/linked/tranformed on new object.
+5. New object is validated.
+6. New object is saved.
+
 ## User-defined column mapping
 
 Users can choose which columns map to DataObject fields. This removes any need to define headings, or headings according to a given schema.
 
 Users can state if the first line of data is infact a heading row.
-
-Mapping process is:
-**User's CSV file** *-maps-to->* **columnMap** *-maps-to->* **DataObject**
 
 ## Usage
 

@@ -1,0 +1,7 @@
+BulkLoaderTest_Country:
+	nz:
+		Title: New Zealand
+		Code: NZ
+	au:
+		Title: Australia
+		Code: AU

@@ -17,6 +17,8 @@ class BetterBulkLoader extends BulkLoader {
 	 */
 	protected $source;
 
+	public $transforms = array();
+
 	/**
 	 * Specify a colsure to be run on every imported record.
 	 * @var Closure
@@ -28,6 +30,12 @@ class BetterBulkLoader extends BulkLoader {
 	 * @var boolean
 	 */
 	protected $writeNewRelations = true;
+
+	/**
+	 * Cache the result of getMappableColumns
+	 * @var array
+	 */
+	protected $mappableFields_cache;
 
 	/**
 	 * Set the BulkLoaderSource for this BulkLoader.
@@ -56,6 +64,8 @@ class BetterBulkLoader extends BulkLoader {
 			//TODO: report on number of records deleted
 			$this->deleteExistingRecords();
 		}
+
+		$this->mappableFields_cache = $this->getMappableColumns();
 
 		return $this->processAll($filepath);
 	}
@@ -86,103 +96,48 @@ class BetterBulkLoader extends BulkLoader {
 		return $results;
 	}
 
-	/**
-	 * Import an individual record from the source.
-	 * 
-	 * @param  array  $record
-	 * @param  array  $columnMap
-	 * @param  BulkLoader_Result  &$results
-	 * @param  boolean $preview 
-	 * @return int|null
-	 */
-	protected function processRecord($record, $columnMap, &$results, $preview = false) {
+	protected function processRecord($record, $columnMap, &$results, $preview = false){
 		if(!$this->validateRecord($record)){
 			$results->addSkipped("Empty/invalid record data.");
 			return;
 		}
-		//map incoming record according to the columnMap
+		//map incoming record according to the standardisation mapping (columnMap)
 		$record = $this->columnMapRecord($record);
 
-		// find existing object, or create new one
-		$existingObj = $this->findExistingObject($record);
+		$modelClass = $this->objectClass;
+		$placeholder = new $modelClass();
 
-		$class = $this->objectClass;
-		$obj = ($existingObj) ? $existingObj : new $class();
-
-		if($this->recordCallback){
-			$recordCallback = $this->recordCallback;
-			$recordCallback($obj);
-		}
-		
-		// first run: find/create any relations and store them on the object
-		// we can't combine runs, as other columns might rely on the relation being present
-		foreach($record as $fieldName => $val) {
-			// don't bother querying of value is not set
-			if($this->isNullValue($val)){
+		//populate placeholder object with transformed data
+		foreach($this->mappableFields_cache as $field => $label){
+			//skip empty fields
+			if(!isset($record[$field]) || empty($record[$field])){
 				continue;
 			}
-			$relationName = $this->getRelationName($fieldName);
-			//don't proceed any further if relation does not exit on obj
-			if(!$obj->getRelationClass($relationName)) {
-				continue;
-			}
-			//get the relation object
-			$relationObj = null;
-			if(isset($this->relationCallbacks[$fieldName]['callback'])){
-					$method = $this->relationCallbacks[$fieldName]['callback'];
-				if($this->hasMethod($method)) {
-					$relationObj = $this->{$method}($obj, $val, $record);
-				} elseif($obj->hasMethod($method)) {
-					$relationObj = $obj->{$method}($val, $record);
-				}
-			}else{
-				$relationComponent = $obj->getComponent($relationName);
-				if($relationComponent->exists()){
-					$relationObj = $relationComponent;
-				}
-			}
-			//set relation id on obj
-			if($relationObj){
-				//write new relation to db
-				if (
-					($this->writeNewRelations || (
-						isset($this->relationCallbacks[$fieldName]['writeNew']) && 
-						$this->relationCallbacks[$fieldName]['writeNew']
-					)) && 
-					!$relationObj->isInDB() && 
-					!$preview
-				){
-					$relationObj->write();
-				}
-				$obj->{"{$relationName}ID"} = $relationObj->ID;
-			}
+			$this->transformField($placeholder, $field, $record[$field]);
 		}
 
-		// second run: save data
-		foreach($record as $fieldName => $val) {
-			// break out of the loop if we are previewing
-			if ($preview) {
-				break;
-			}
-			// look up the mapping to see if this needs to map to callback
-			$mapped = $this->columnMap && isset($this->columnMap[$fieldName]);
-			if($mapped && strpos($this->columnMap[$fieldName], '->') === 0) {
-				$funcName = substr($this->columnMap[$fieldName], 2);
-				$this->$funcName($obj, $val, $record);
-			} else if($obj->hasMethod("import{$fieldName}")) {
-				$obj->{"import{$fieldName}"}($val, $record);
-			} else {
-				//DataObject update method supports the dot notation
-				$obj->update(array($fieldName => $val));
-			}
+		//find existing duplicate of placeholder
+		$obj = null;
+		$existing = null;
+		if(!$placeholder->ID && !empty($this->duplicateChecks)){
+			$data = $placeholder->getQueriedDatabaseFields();
+			$existing = $this->findExistingObject($data);
+		}
+		if($existing){
+			$obj = $existing;
+			$obj->update($data);
+		}else{
+			$obj = $placeholder;
 		}
 
-		$changed = $obj->isChanged();
+		//TODO: validate new / updated object
+
+		$changed = $existing && $obj->isChanged();
 		try{
-			// write record
-			($preview) ? 0 : $obj->write();
+			// write obj record
+			$obj->write();
 			// save to results
-			if($existingObj) {
+			if($existing) {
 				if($changed){
 					$results->addUpdated($obj);
 				}else{
@@ -205,12 +160,82 @@ class BetterBulkLoader extends BulkLoader {
 	}
 
 	/**
+	 * Perform field transformation or setting of data on placeholder.
+	 * @param  DataObject $placeholder
+	 * @param  string $field
+	 * @param  mixed $value
+	 */
+	protected function transformField($placeholder, $field, $value){
+		$callback = isset($this->transforms[$field]['callback']) &&
+					isset($this->transforms[$field]['callback']) &&
+					is_callable($this->transforms[$field]['callback']) ?
+					$this->transforms[$field]['callback'] : null;
+					
+		//handle relations
+		if($this->isRelation($field)){
+			$relation = null;
+			$relationName = null;
+			//relation by callback
+			if($callback){
+				$relation = $callback($value, $placeholder);
+				$relationName = $field;
+			}
+			//relation by dot notation
+			else if(strpos($field, '.') !== false){
+				list($relationName, $columnName) = explode('.', $field);
+				$relationClass = $placeholder->getRelationClass($relationName);
+				$relation = $relationClass::get()
+								->filter($columnName, $value)
+								->first();
+			}
+
+			//TODO: write, vs link relations
+			
+			if($relationName && $relation && $relation->exists()){
+				$placeholder->{$relationName."ID"} = $relation->ID;
+			}
+		}
+		//handle data fields
+		else{
+			//transform field by callback
+			//..or callback can update placeholder directly
+			if($callback){
+				if($result = $callback($value, $placeholder)){
+					$placeholder->update(array(
+						$field => $value
+					));
+				}
+			}
+			//set field directly
+			else{
+				$placeholder->update(array(
+					$field => $value
+				));
+			}
+		}
+	}
+
+	/**
+	 * Detect if a given record field is a relation field.
+	 * @param  string  $field
+	 * @return boolean
+	 */
+	protected function isRelation($field){
+		//get relation name from dot notation
+		if(strpos($field, '.') !== false){
+			list($field, $columnName) = explode('.', $field);
+		}
+		$has_ones = singleton($this->objectClass)->has_one();
+		//check if relation is present in has ones
+		return isset($has_ones[$field]);
+	}
+
+	/**
 	 * Convert the record's keys to appropriate columnMap keys.
 	 * @return array record
 	 */
 	protected function columnMapRecord($record){
-		$adjustedmap = $this->getAdjustedMap();
-
+		$adjustedmap = $this->columnMap;
 		$newrecord = array();
 		foreach($record as $field => $value){
 			if(isset($adjustedmap[$field])){
@@ -221,27 +246,6 @@ class BetterBulkLoader extends BulkLoader {
 		}
 
 		return $newrecord;
-	}
-
-	/**
-	 * If the mapping goes to a "->" callback,
-	 * then 
-	 * 
-	 * if the map goes to a callback, use the same key value as the map
-	 * value, rather than function name as multiple keys may use the 
-	 * same callback
-	 */
-	protected function getAdjustedMap(){
-		$map = array();
-		foreach($this->columnMap as $k => $v) {
-			if(strpos($v, "->") === 0) {
-				$map[$k] = $k;
-			} else {
-				$map[$k] = $v;
-			}
-		}
-
-		return $map;
 	}
 
 	/**
@@ -293,11 +297,10 @@ class BetterBulkLoader extends BulkLoader {
 		$singleton = singleton($class);
 		// checking for existing records (only if not already found)
 		foreach($this->duplicateChecks as $fieldName => $duplicateCheck) {
-
 			if(is_string($duplicateCheck)) {
 				$field = Convert::raw2sql($duplicateCheck);
+				//skip current duplicate check if field value is empty
 				if(!isset($record[$field]) || empty($record[$field])) {
-					//skip current duplicate check if field value is empty
 					continue;
 				}
 				$existingRecord = $class::get()
@@ -337,15 +340,16 @@ class BetterBulkLoader extends BulkLoader {
 	 * @return array
 	 */
 	public function getMappableColumns() {
+		$scaffolded = $this->scaffoldMappableFields();
 
-		//TODO: allow defining a subset of allowed mappings/columns
-		//extract fields from:
-			//column map
-			//relationcallbacks
-			//duplicate checks
-			//..and get human readable titles
-		
-		return $this->scaffoldMappableFields();
+		//TODO: blacklist  or whitelist fields to be mappable
+
+		//TODO: add labels for transformables
+		$transformables = array_keys($this->transforms);
+		$transformables = array_combine($transformables, $transformables);
+		$scaffolded = array_merge($transformables, $scaffolded);
+
+		return $scaffolded;
 	}
 
 	/**
@@ -362,25 +366,7 @@ class BetterBulkLoader extends BulkLoader {
 					$fields = $this->getMappableFieldsForClass($type);
 					foreach($fields as $field => $title){
 						$map[$relationship.".".$field] = 
-							$this->formatMappingFieldLabel($relationship,$title);
-					}
-				}
-			}
-			if($has_manys = singleton($this->objectClass)->has_one()){
-				foreach($has_manys as $relationship => $type){
-					$fields = $this->getMappableFieldsForClass($type);
-					foreach($fields as $field => $title){
-						$map[$relationship.".".$field] = 
-							$this->formatMappingFieldLabel($relationship,$title);
-					}
-				}
-			}
-			if($many_manys = singleton($this->objectClass)->has_one()){
-				foreach($many_manys as $relationship => $type){
-					$fields = $this->getMappableFieldsForClass($type);
-					foreach($fields as $field => $title){
-						$map[$relationship.".".$field] = 
-							$this->formatMappingFieldLabel($relationship,$title);
+							$this->formatMappingFieldLabel($relationship, $title);
 					}
 				}
 			}
@@ -397,6 +383,7 @@ class BetterBulkLoader extends BulkLoader {
 	protected function getMappableFieldsForClass($class) {
 		$fields = (array)singleton($class)->fieldLabels(false);
 		natcasesort($fields);
+
 		return $fields;
 	}
 
