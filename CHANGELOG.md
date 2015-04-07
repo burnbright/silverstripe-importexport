@@ -18,4 +18,5 @@
 
 ## Upgrading Notes
 
-You'll need to seperately define a BulkLoaderSource when configuring your BulkLoader. 
+* You'll need to seperately define a BulkLoaderSource when configuring your BulkLoader. 
+* No longer can you specify a callback by giving the name of the callback, it must now be an anonmyous function.

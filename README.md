@@ -86,6 +86,52 @@ $loader->setSource($source);
 $result = $loader->load();
 ```
 
+## Transform incoming record data
+
+You may want to perform some transformations to incoming record data. This can be done by specifying a callback against the record field name.
+
+```php
+$this->loader->transforms = array(
+    'Code' => array(
+        'callback' => function($field, $record) {
+            //capitalize course codes
+            return strtoupper($record[$field]));
+        }
+    )
+);
+```
+
+## Customise how relationships are handled
+
+The bulk loader can handle linking and creating `has_one` relationship objects, by either providing a callback, or using the `Relation.FieldName` style "dot notation". Relationship handling is also performed in the `transformations` array.
+
+Here are some configuration examples:
+
+```php
+$this->loader->transforms = array(
+    //link and create courses
+    'Course.Title' = array(
+        'link' => true,
+        'create' => true
+    ),
+    //only link to existing tutors
+    'Tutor.Name' => array(
+        'link' => true,
+        'create' => false
+    ),
+    //custom way to find parent courses
+    'Parent' => array(
+        'callback' => function($value, $placeholder) use ($self){
+            return Course::get()
+                ->filter("Title", $value)
+                ->first();
+        }
+    )
+);
+```
+
+Note that `$placeholder` in the above example refers to a dummy DataObject that is populated in order to then be saved, or checked against for duplicates. You should not call `$placeholder->write()` in your callback.
+
 ## Contributions
 
 Please do contribute whatever you can to this module. Check out the [issues](https://github.com/burnbright/silverstripe-importexport/issues) and [milestones](https://github.com/burnbright/silverstripe-importexport/milestones) to see what has needs to be done.
