@@ -9,6 +9,7 @@
 * Introduced ListBulkLoader for confining record CRUD actions to a given DataList (HasManyList).
 * Decoupled CSVParser from BulkLoader. Column mapping is now performed in BulkLoader on each record as it is loaded.
 * Replaced CSVParser with goodby/csv library.
+* Customisation control over fields for which relation objects are created and/or linked.
 
 ## Bug Fixes
 

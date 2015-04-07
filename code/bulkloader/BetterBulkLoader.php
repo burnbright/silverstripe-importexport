@@ -130,9 +130,8 @@ class BetterBulkLoader extends BulkLoader {
 			$obj = $placeholder;
 		}
 
-		//TODO: validate new / updated object
-
 		$changed = $existing && $obj->isChanged();
+		//try/catch for potential write() ValidationException
 		try{
 			// write obj record
 			$obj->write();
@@ -167,51 +166,62 @@ class BetterBulkLoader extends BulkLoader {
 	 */
 	protected function transformField($placeholder, $field, $value){
 		$callback = isset($this->transforms[$field]['callback']) &&
-					isset($this->transforms[$field]['callback']) &&
 					is_callable($this->transforms[$field]['callback']) ?
-					$this->transforms[$field]['callback'] : null;
-					
+					$this->transforms[$field]['callback'] : null;			
 		//handle relations
 		if($this->isRelation($field)){
 			$relation = null;
 			$relationName = null;
-			//relation by callback
+			//get/make relation via callback
 			if($callback){
 				$relation = $callback($value, $placeholder);
 				$relationName = $field;
 			}
-			//relation by dot notation
+			//get/make relation via dot notation
 			else if(strpos($field, '.') !== false){
 				list($relationName, $columnName) = explode('.', $field);
-				$relationClass = $placeholder->getRelationClass($relationName);
-				$relation = $relationClass::get()
-								->filter($columnName, $value)
-								->first();
+				if($relationClass = $placeholder->getRelationClass($relationName)){
+					$relation = $relationClass::get()
+									->filter($columnName, $value)
+									->first();
+					//create empty relation object
+					//and set the given value on the appropriate column
+					if(!$relation){
+						$relation = $placeholder->{$relationName}();
+						$relation->{$columnName} = $value;
+					}
+				}
 			}
-
-			//TODO: write, vs link relations
-			
+			//link and create relation objects
+			$linkexisting = isset($this->transforms[$field]['link']) &&
+								$this->transforms[$field]['link'];
+			$createnew = isset($this->transforms[$field]['create']) &&
+								$this->transforms[$field]['create'];
+			//ditch relation if we aren't linking
+			if(!$linkexisting && $relation && $relation->isInDB()){
+				$relation = null;
+			}
+			//write relation object, if configured
+			if($createnew && $relation && !$relation->isInDB()){
+				//TODO: try/catch write validation?
+				$relation->write();
+			}
+			//add the relation id to the placeholder
 			if($relationName && $relation && $relation->exists()){
 				$placeholder->{$relationName."ID"} = $relation->ID;
 			}
 		}
 		//handle data fields
 		else{
-			//transform field by callback
-			//..or callback can update placeholder directly
+			//transform field value via callback
+			//(callback can also update placeholder directly)
 			if($callback){
-				if($result = $callback($value, $placeholder)){
-					$placeholder->update(array(
-						$field => $value
-					));
-				}
+				$value = $callback($value, $placeholder);
 			}
-			//set field directly
-			else{
-				$placeholder->update(array(
-					$field => $value
-				));
-			}
+			//set field value
+			$placeholder->update(array(
+				$field => $value
+			));
 		}
 	}
 
@@ -303,26 +313,24 @@ class BetterBulkLoader extends BulkLoader {
 				if(!isset($record[$field]) || empty($record[$field])) {
 					continue;
 				}
+				//If the dupilcate check is a dot notation, then convert to ID relation
+				if(strpos($duplicateCheck, '.') !== false){
+					list($duplicateCheck, $columnName) = explode('.', $duplicateCheck);
+					$field = $relationName."ID";
+				}
 				$existingRecord = $class::get()
 									->filter($field, $record[$field])
 									->first();
-
 				if($existingRecord) {
 					return $existingRecord;
 				}
-			} elseif(is_array($duplicateCheck) && isset($duplicateCheck['callback'])) {
+			} elseif(
+				is_array($duplicateCheck) &&
+				isset($duplicateCheck['callback']) &&
+				is_callable($duplicateCheck['callback'])
+			) {
 				$callback = $duplicateCheck['callback'];
-				if($this->hasMethod($callback)) {
-					$existingRecord = $this->{$callback}($record[$fieldName], $record);
-				} elseif($singleton->hasMethod($callback)) {
-					$existingRecord = $singleton->{$callback}($record[$fieldName], $record);
-				} else {
-					user_error("BulkLoader::processRecord():"
-							. " {$duplicateCheck['callback']} not found on importer or object class.",
-						E_USER_WARNING
-					);
-				}
-				if($existingRecord) {
+				if($existingRecord = $callback($fieldName, $record)) {
 					return $existingRecord;
 				}
 			}else {

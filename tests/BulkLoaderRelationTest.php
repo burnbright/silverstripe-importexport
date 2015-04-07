@@ -5,8 +5,8 @@ class BulkLoaderRelationTest extends SapphireTest{
 	protected static $fixture_file = 'importexport/tests/fixtures/BulkLoaderRelationTest.yaml';
 
 	protected $extraDataObjects = array(
-		'BulkLoaderRelationTest_Course',
-		'BulkLoaderRelationTest_CourseSelection'
+		'BulkLoaderRelationTest_CourseSelection',
+		'BulkLoaderRelationTest_Course'
 	);
 
 	protected $loader;
@@ -15,8 +15,8 @@ class BulkLoaderRelationTest extends SapphireTest{
 	public function setUp(){
 		parent::setUp();
 		$data = array(
-			array("Course.Title" => "Math 101"),
-			array("Course.Title" => "Tech 102"), //existing record
+			array("Course.Title" => "Math 101"), //unlinked relation record
+			array("Course.Title" => "Tech 102"), //existing relation
 			array("Course.Title" => "Geometry 722") //relation does not exist
 		);
 		$this->loader = new BetterBulkLoader("BulkLoaderRelationTest_CourseSelection");
@@ -25,14 +25,15 @@ class BulkLoaderRelationTest extends SapphireTest{
 		);
 	}
 
-	//this is the default behaviour
-	public function testCreateAllRelations() {
+	public function testNoRelations() {
 		$results = $this->loader->load();
-		$this->assertEquals($results->CreatedCount(), 3);
-		$this->assertEquals($results->UpdatedCount(), 0);
-		$this->assertEquals($results->DeletedCount(), 0);
-		$this->assertEquals($results->SkippedCount(), 0);
-		$this->assertEquals($results->Count(), 3);
+		$this->assertEquals(3, $results->CreatedCount(),
+			"objs have been created from all records");
+		$this->assertEquals(3, BulkLoaderRelationTest_Course::get()->count(),
+			"No extra courses created");
+		$this->assertEquals(1, BulkLoaderRelationTest_CourseSelection::get()
+					->filter("CourseID:GreaterThan", 0)->count(),
+			"No records have been linked");
 	}
 
 	public function testLinkAndCreateRelations() {
@@ -40,13 +41,14 @@ class BulkLoaderRelationTest extends SapphireTest{
 			'link' => true,
 			'create' => true
 		);
-		$this->loader->duplicateChecks['Course.Title'] = 'Course.Title';
 		$results = $this->loader->load();
-		$this->assertEquals($results->CreatedCount(), 1);
-		$this->assertEquals($results->UpdatedCount(), 2);
-		$this->assertEquals($results->DeletedCount(), 0);
-		$this->assertEquals($results->SkippedCount(), 0);
-		$this->assertEquals($results->Count(), 3);
+		$this->assertEquals(3, $results->CreatedCount(),
+			"objs have been created from all records");
+		$this->assertEquals(4, BulkLoaderRelationTest_Course::get()->count(),
+			"New Geometry 722 course created");
+		$this->assertEquals(4, BulkLoaderRelationTest_CourseSelection::get()
+					->filter("CourseID:GreaterThan", 0)->count(),
+				"we have gone from 1 to 4 linked records");
 	}
 
 	public function testOnlyLinkRelations() {
@@ -54,13 +56,15 @@ class BulkLoaderRelationTest extends SapphireTest{
 			'link' => true,
 			'create' => false
 		);
-		$this->loader->duplicateChecks['Course.Title'] = 'Course.Title';
 		$results = $this->loader->load();
-		$this->assertEquals($results->CreatedCount(), 0);
-		$this->assertEquals($results->UpdatedCount(), 2);
-		$this->assertEquals($results->DeletedCount(), 0);
-		$this->assertEquals($results->SkippedCount(), 0);
-		$this->assertEquals($results->Count(), 2);
+		$this->assertEquals(3, $results->CreatedCount(),
+			"objs have been created from all records");
+		$this->assertEquals(3, BulkLoaderRelationTest_Course::get()->count(),
+			"number of courses remains the same");
+		//asserting 3 and not 2 because we have no duplicate checks
+		$this->assertEquals(3, BulkLoaderRelationTest_CourseSelection::get()
+					->filter("CourseID:GreaterThan", 0)->count(),
+				"we have gone from 1 to 3 linked records");
 	}
 
 	public function testOnlyCreateUniqueRelations() {
@@ -68,28 +72,42 @@ class BulkLoaderRelationTest extends SapphireTest{
 			'link' => false,
 			'create' => true
 		);
-		$this->loader->duplicateChecks['Course.Title'] = 'Course.Title';
 		$results = $this->loader->load();
-		$this->assertEquals($results->CreatedCount(), 1);
-		$this->assertEquals($results->UpdatedCount(), 0);
-		$this->assertEquals($results->DeletedCount(), 0);
-		$this->assertEquals($results->SkippedCount(), 0);
-		$this->assertEquals($results->Count(), 1);
+		$this->assertEquals(3, $results->CreatedCount(),
+			"objs have been created from all records");
+		$this->assertEquals(4, BulkLoaderRelationTest_Course::get()->count(),
+			"New Geometry 722 course created");
+		$this->assertEquals(2, BulkLoaderRelationTest_CourseSelection::get()
+					->filter("CourseID:GreaterThan", 0)->count(),
+				"Only the created object is linked");
+	}
+
+	public function testRelationDuplicateCheck() {
+		$results = $this->loader->load();
+		$this->assertEquals(3, $results->CreatedCount(),
+			"objs have been created from all records");
+		$this->assertEquals(3, BulkLoaderRelationTest_Course::get()->count(),
+			"No extra courses created");
+		$this->assertEquals(1, BulkLoaderRelationTest_CourseSelection::get()
+					->filter("CourseID:GreaterThan", 0)->count(),
+			"No records have been linked");
 	}
 
 }
 
-class BulkLoaderRelationTest_Course extends DataObject implements TestOnly{
-	
-	private static $db = array(
-		"Title" => "Varchar"
-	);
-}
-
+//primary object we are loading records into
 class BulkLoaderRelationTest_CourseSelection extends DataObject implements TestOnly{
 
 	private static $has_one = array(
 		"Course" => "BulkLoaderRelationTest_Course"
 	);
 
+}
+
+//related object
+class BulkLoaderRelationTest_Course extends DataObject implements TestOnly{
+	
+	private static $db = array(
+		"Title" => "Varchar"
+	);
 }

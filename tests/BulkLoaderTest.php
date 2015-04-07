@@ -12,7 +12,7 @@ class BulkLoaderTest extends SapphireTest{
 	public function testLoading() {
 
 		$loader = new BetterBulkLoader("BulkLoaderTest_Person");
-		
+
 		$loader->columnMap = array(
 			"first name" => "FirstName",
 			"last name" => "Surname",
@@ -30,8 +30,8 @@ class BulkLoaderTest extends SapphireTest{
 				}
 			),
 			"Country.Code" => array(
-				"link" => true, //link up relations
-				"create" => false //don't creaet new relation objects
+				"link" => true, //link up to existing relations
+				"create" => false //don't create new relation objects
 			)
 		);
 
@@ -88,4 +88,3 @@ class BulkLoaderTest_Country extends Dataobject implements TestOnly{
 	);
 
 }
-
