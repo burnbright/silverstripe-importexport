@@ -28,17 +28,7 @@ class BulkLoaderRelationTest extends SapphireTest{
 		);
 	}
 
-	public function testNoRelations() {
-		$results = $this->loader->load();
-		$this->assertEquals(3, $results->CreatedCount(),
-			"objs have been created from all records");
-		$this->assertEquals(3, BulkLoaderRelationTest_Course::get()->count(),
-			"No extra courses created");
-		$this->assertEquals(1, BulkLoaderRelationTest_CourseSelection::get()
-					->filter("CourseID:GreaterThan", 0)->count(),
-			"No records have been linked");
-	}
-
+	//this is the default behaviour
 	public function testLinkAndCreateRelations() {
 		$this->loader->transforms['Course.Title'] = array(
 			'link' => true,
@@ -52,6 +42,21 @@ class BulkLoaderRelationTest extends SapphireTest{
 		$this->assertEquals(4, BulkLoaderRelationTest_CourseSelection::get()
 					->filter("CourseID:GreaterThan", 0)->count(),
 				"we have gone from 1 to 4 linked records");
+	}
+
+	public function testNoRelations() {
+		$this->loader->transforms['Course.Title'] = array(
+			'link' => false,
+			'create' => false
+		);
+		$results = $this->loader->load();
+		$this->assertEquals(3, $results->CreatedCount(),
+			"objs have been created from all records");
+		$this->assertEquals(3, BulkLoaderRelationTest_Course::get()->count(),
+			"No extra courses created");
+		$this->assertEquals(1, BulkLoaderRelationTest_CourseSelection::get()
+					->filter("CourseID:GreaterThan", 0)->count(),
+			"No records have been linked");
 	}
 
 	public function testOnlyLinkRelations() {

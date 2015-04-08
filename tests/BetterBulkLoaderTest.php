@@ -135,16 +135,7 @@ class BetterBulkLoaderTest extends SapphireTest {
 					return BetterBulkLoaderTest_Team::get()
 							->filter("Title", $title)
 							->first();
-				},
-				'create' => true,
-				'link' => true
-			),
-			'Team.TeamSize' => array(
-				'link' => true
-			),
-			'Contract.Amount' => array(
-				'create' => true,
-				'link' => true
+				}
 			)
 			// contract should be automatically discovered
 		);

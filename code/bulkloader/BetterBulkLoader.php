@@ -209,6 +209,16 @@ class BetterBulkLoader extends BulkLoader {
 								$this->transforms[$field]['link'];
 			$createnew = isset($this->transforms[$field]['create']) &&
 								$this->transforms[$field]['create'];
+
+			//default behaviour
+			if(
+				!isset($this->transforms[$field]['link']) &&
+				!isset($this->transforms[$field]['create'])
+			){
+				$linkexisting = true;
+				$createnew = true;
+			}
+
 			//ditch relation if we aren't linking
 			if(!$linkexisting && $relation && $relation->isInDB()){
 				$relation = null;
@@ -376,9 +386,11 @@ class BetterBulkLoader extends BulkLoader {
 		//TODO: blacklist  or whitelist fields to be mappable
 
 		//TODO: add labels for transformables
-		$transformables = array_keys($this->transforms);
-		$transformables = array_combine($transformables, $transformables);
-		$scaffolded = array_merge($transformables, $scaffolded);
+		if(!empty($this->transforms)){
+			$transformables = array_keys($this->transforms);
+			$transformables = array_combine($transformables, $transformables);
+			$scaffolded = array_merge($transformables, $scaffolded);
+		}
 
 		return $scaffolded;
 	}
