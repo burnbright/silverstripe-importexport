@@ -96,6 +96,9 @@ class BetterBulkLoader extends BulkLoader {
 		return $this->processAll($filepath);
 	}
 
+	/**
+	 * Delete all existing records
+	 */
 	public function deleteExistingRecords(){
 		DataObject::get($this->objectClass)->removeAll();
 	}
@@ -122,6 +125,9 @@ class BetterBulkLoader extends BulkLoader {
 		return $results;
 	}
 
+	/**
+	 * Import the given record
+	 */
 	protected function processRecord($record, $columnMap, &$results, $preview = false){
 		if(!$this->validateRecord($record)){
 			$results->addSkipped("Empty/invalid record data.");
@@ -129,9 +135,7 @@ class BetterBulkLoader extends BulkLoader {
 		}
 		//map incoming record according to the standardisation mapping (columnMap)
 		$record = $this->columnMapRecord($record);
-
 		$modelClass = $this->objectClass;
-
 		//TODO: secure placeholder against getting written
 		//perhaps by wrapping the model class
 		$placeholder = new $modelClass();
@@ -144,7 +148,6 @@ class BetterBulkLoader extends BulkLoader {
 			}
 			$this->transformField($placeholder, $field, $record[$field]);
 		}
-
 		//find existing duplicate of placeholder data
 		$obj = null;
 		$existing = null;
@@ -160,7 +163,6 @@ class BetterBulkLoader extends BulkLoader {
 		}else{
 			$obj = $placeholder;
 		}
-
 		$changed = $existing && $obj->isChanged();
 		//try/catch for potential write() ValidationException
 		try{
@@ -230,12 +232,13 @@ class BetterBulkLoader extends BulkLoader {
 				}
 			}
 			//link and create relation objects
-			$linkexisting = isset($this->transforms[$field]['link']) &&
-								$this->transforms[$field]['link'] ? 
-								true : $this->relationLinkDefault;
-			$createnew = isset($this->transforms[$field]['create']) &&
-								$this->transforms[$field]['create'] ?
-								true : $this->relationCreateDefault;
+			
+			$linkexisting = isset($this->transforms[$field]['link']) ?
+								(bool)$this->transforms[$field]['link'] : 
+								$this->relationLinkDefault;
+			$createnew = isset($this->transforms[$field]['create']) ?
+								(bool)$this->transforms[$field]['create'] :
+								$this->relationCreateDefault;
 
 			//ditch relation if we aren't linking
 			if(!$linkexisting && $relation && $relation->isInDB()){
@@ -243,12 +246,13 @@ class BetterBulkLoader extends BulkLoader {
 			}
 			//write relation object, if configured
 			if($createnew && $relation && !$relation->isInDB()){
+				
 				//TODO: try/catch write validation?
 				$relation->write();
 			}
 			//write changes to existing relations
 			//TODO: make this behaviour customisable
-			if($relation && $relation->isInDB() && $relation->isChanged()){
+			else if($relation && $relation->isInDB() && $relation->isChanged()){
 				$relation->write();
 			}
 			//add the relation id to the placeholder
@@ -400,9 +404,7 @@ class BetterBulkLoader extends BulkLoader {
 	 */
 	public function getMappableColumns() {
 		$scaffolded = $this->scaffoldMappableFields();
-
 		//TODO: blacklist  or whitelist fields to be mappable
-
 		//TODO: add labels for transformables
 		if(!empty($this->transforms)){
 			$transformables = array_keys($this->transforms);
