@@ -117,8 +117,7 @@ class BulkLoaderRelationTest extends SapphireTest{
 		$this->assertEquals(0, $results->SkippedCount(), "0 skipped");
 		$this->assertEquals(1, $results->UpdatedCount(), "1 updated");
 
-		//TODO: TEST using {RelationName}ID and {RelationName}
-
+		//TODO: test using {RelationName}ID and {RelationName}
 	}
 
 	//TODO: test skip duplicate record

@@ -46,7 +46,6 @@ class ListBulkLoader extends BetterBulkLoader {
 	 * Override the default deleteExistingRecords method.
 	 */
 	public function deleteExistingRecords() {
-		//TODO: allow chooosing between delete and remove(unlink)
 		foreach($this->list as $item) {
 			$item->delete();
 			$item->destroy();

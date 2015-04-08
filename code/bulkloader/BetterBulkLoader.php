@@ -82,15 +82,9 @@ class BetterBulkLoader extends BulkLoader {
 	}
 
 	public function load($filepath = null) {
-		//TODO: remove this stuff out?
-		increase_time_limit_to(3600);
-		increase_memory_limit_to('512M');
-		
 		if($this->deleteExistingRecords) {
-			//TODO: report on number of records deleted
 			$this->deleteExistingRecords();
 		}
-
 		$this->mappableFields_cache = $this->getMappableColumns();
 
 		return $this->processAll($filepath);
@@ -136,8 +130,6 @@ class BetterBulkLoader extends BulkLoader {
 		//map incoming record according to the standardisation mapping (columnMap)
 		$record = $this->columnMapRecord($record);
 		$modelClass = $this->objectClass;
-		//TODO: secure placeholder against getting written
-		//perhaps by wrapping the model class
 		$placeholder = new $modelClass();
 
 		//populate placeholder object with transformed data
@@ -246,12 +238,14 @@ class BetterBulkLoader extends BulkLoader {
 			}
 			//write relation object, if configured
 			if($createnew && $relation && !$relation->isInDB()){
-				
-				//TODO: try/catch write validation?
-				$relation->write();
+				//fail validation gracefully
+				try{
+					$relation->write();
+				}catch(ValidationException $e){
+					$relation = null;
+				}
 			}
 			//write changes to existing relations
-			//TODO: make this behaviour customisable
 			else if($relation && $relation->isInDB() && $relation->isChanged()){
 				$relation->write();
 			}
@@ -456,7 +450,6 @@ class BetterBulkLoader extends BulkLoader {
 	 * @param  string $title
 	 */
 	protected function formatMappingFieldLabel($relationship, $title){
-		//TODO: allow customisation
 		return sprintf("%s: %s", $relationship, $title);
 	}
 
