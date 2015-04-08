@@ -9,3 +9,4 @@ BulkLoaderRelationTest_Course:
 BulkLoaderRelationTest_CourseSelection:
   tech102:
     Course: =>BulkLoaderRelationTest_Course.tech102
+    Term: 3

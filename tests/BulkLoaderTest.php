@@ -10,7 +10,6 @@ class BulkLoaderTest extends SapphireTest{
 	);
 
 	public function testLoading() {
-
 		$loader = new BetterBulkLoader("BulkLoaderTest_Person");
 
 		$loader->columnMap = array(
@@ -62,6 +61,29 @@ class BulkLoaderTest extends SapphireTest{
 		//relation has been succesfully joined
 		$this->assertEquals($joe->Country()->Title, "New Zealand");
 		$this->assertEquals($joe->Country()->Code, "NZ");
+	}
+
+	public function testColumnMap(){
+		$this->markTestIncomplete("Implement this");
+	}
+
+	public function testTransformCallback(){
+		$loader = new BetterBulkLoader("BulkLoaderTest_Person");
+		$data = array(
+			array("FirstName" => "joe", "age" => "62", "country" => "NZ")
+		);
+		$loader->setSource(new ArrayBulkLoaderSource($data));
+		$loader->transforms = array(
+			'FirstName' => array(
+				'callback' => function($value){
+					return strtoupper($value);
+				}
+			)
+		);
+		$results = $loader->load();
+		$this->assertEquals($results->CreatedCount(), 1);
+		$result = $results->Created()->first();
+		$this->assertEquals("JOE", $result->FirstName, "First name has been transformed");
 	}
 
 }

@@ -23,7 +23,6 @@ class ListBulkLoader extends BetterBulkLoader {
 		return $this;
 	}
 
-	
 	public function getList(){
 		return $this->getList();
 	}

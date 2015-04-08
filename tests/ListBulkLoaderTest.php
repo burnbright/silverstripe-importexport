@@ -37,8 +37,8 @@ class ListBulkLoaderTest extends SapphireTest{
 		$this->assertEquals(2, $result->CreatedCount(), "Records created");
 		$this->assertEquals(1, $result->UpdatedCount(), "Record updated");
 		$this->assertEquals(3, $result->Count(), "Records imported");
-		$this->assertEquals(4, ListBulkLoaderTest_Person::get()->count());
-		$this->assertEquals(3, $parent->Children()->count());
+		$this->assertEquals(4, ListBulkLoaderTest_Person::get()->count(), "Total DataObjects is now 4");
+		$this->assertEquals(3, $parent->Children()->count(), "Parent has 3 children");
 	}
 
 	public function testDeleteExisting() {

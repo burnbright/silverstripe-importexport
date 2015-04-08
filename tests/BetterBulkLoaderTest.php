@@ -128,11 +128,24 @@ class BetterBulkLoaderTest extends SapphireTest {
 			'salary' => 'Contract.Amount' // test relation creation
 		);
 		$loader->hasHeaderRow = true;
-		$loader->relationCallbacks = array(
+		$loader->transforms = array(
 			'Team.Title' => array(
 				'relationname' => 'Team',
-				'callback' => 'getTeamByTitle'
+				'callback' => function ($title) {
+					return BetterBulkLoaderTest_Team::get()
+							->filter("Title", $title)
+							->first();
+				},
+				'create' => true,
+				'link' => true
 			),
+			'Team.TeamSize' => array(
+				'link' => true
+			),
+			'Contract.Amount' => array(
+				'create' => true,
+				'link' => true
+			)
 			// contract should be automatically discovered
 		);
 		$results = $loader->load($filepath);
@@ -141,12 +154,17 @@ class BetterBulkLoaderTest extends SapphireTest {
 		$this->assertEquals(1, $results->Count(), 'Test correct count of imported data');
 		
 		// Test of augumenting existing relation (created by fixture)
-		$testTeam = DataObject::get_one('BetterBulkLoaderTest_Team', null, null, '"Created" DESC');
+		$testTeam = BetterBulkLoaderTest_Team::get('BetterBulkLoaderTest_Team')
+						->sort("Created", "DESC")
+						->first();
+
 		$this->assertEquals('20', $testTeam->TeamSize, 'Augumenting existing has_one relation works');
 		
 		// Test of creating relation
-		$testContract = DataObject::get_one('BetterBulkLoaderTest_PlayerContract');
-		$testPlayer = Dataobject::get_one("BetterBulkLoaderTest_Player", "\"FirstName\" = 'John'");
+		$testContract = BetterBulkLoaderTest_PlayerContract::get()->first();
+		$this->assertNotNull($testContract, "Contract object exists");
+		$testPlayer = BetterBulkLoaderTest_Player::get()->filter("FirstName",'John')->first();
+		$this->assertNotNull($testPlayer, "Player John exists");
 		$this->assertEquals($testPlayer->ContractID, $testContract->ID, 'Creating new has_one relation works');
 		
 		// Test nested setting of relation properties
@@ -278,11 +296,6 @@ class BetterBulkLoaderTest_Player extends DataObject implements TestOnly {
 		'Team' => 'BetterBulkLoaderTest_Team',
 		'Contract' => 'BetterBulkLoaderTest_PlayerContract'
 	);
-	
-	public function getTeamByTitle($title) {
-		$SQL_title = Convert::raw2sql($title);
-		return DataObject::get_one('BetterBulkLoaderTest_Team', "\"Title\" = '{$SQL_title}'");
-	}
 
 	protected function validate() {
 		$result = parent::validate();

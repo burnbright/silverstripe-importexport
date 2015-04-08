@@ -105,6 +105,9 @@ class BetterBulkLoader extends BulkLoader {
 		$record = $this->columnMapRecord($record);
 
 		$modelClass = $this->objectClass;
+
+		//TODO: secure placeholder against getting written
+		//perhaps by wrapping the model class
 		$placeholder = new $modelClass();
 
 		//populate placeholder object with transformed data
@@ -116,11 +119,13 @@ class BetterBulkLoader extends BulkLoader {
 			$this->transformField($placeholder, $field, $record[$field]);
 		}
 
-		//find existing duplicate of placeholder
+		//find existing duplicate of placeholder data
 		$obj = null;
 		$existing = null;
 		if(!$placeholder->ID && !empty($this->duplicateChecks)){
 			$data = $placeholder->getQueriedDatabaseFields();
+			//don't match on ID, ClassName or RecordClassName
+			unset($data['ID'], $data['ClassName'], $data['RecordClassName']);
 			$existing = $this->findExistingObject($data);
 		}
 		if($existing){
@@ -167,15 +172,21 @@ class BetterBulkLoader extends BulkLoader {
 	protected function transformField($placeholder, $field, $value){
 		$callback = isset($this->transforms[$field]['callback']) &&
 					is_callable($this->transforms[$field]['callback']) ?
-					$this->transforms[$field]['callback'] : null;			
+					$this->transforms[$field]['callback'] : null;
 		//handle relations
 		if($this->isRelation($field)){
 			$relation = null;
 			$relationName = null;
+
 			//get/make relation via callback
 			if($callback){
 				$relation = $callback($value, $placeholder);
 				$relationName = $field;
+
+				//convert any use of dot notation
+				if(strpos($field, '.') !== false){
+					list($relationName, $columnName) = explode('.', $field);
+				}
 			}
 			//get/make relation via dot notation
 			else if(strpos($field, '.') !== false){
@@ -188,8 +199,9 @@ class BetterBulkLoader extends BulkLoader {
 					//and set the given value on the appropriate column
 					if(!$relation){
 						$relation = $placeholder->{$relationName}();
-						$relation->{$columnName} = $value;
 					}
+					//set data on relation
+					$relation->{$columnName} = $value;
 				}
 			}
 			//link and create relation objects
@@ -206,6 +218,11 @@ class BetterBulkLoader extends BulkLoader {
 				//TODO: try/catch write validation?
 				$relation->write();
 			}
+
+			if($relation && $relation->isInDB() && $relation->isChanged()){
+				$relation->write();
+			}
+
 			//add the relation id to the placeholder
 			if($relationName && $relation && $relation->exists()){
 				$placeholder->{$relationName."ID"} = $relation->ID;
@@ -307,24 +324,30 @@ class BetterBulkLoader extends BulkLoader {
 		$singleton = singleton($class);
 		// checking for existing records (only if not already found)
 		foreach($this->duplicateChecks as $fieldName => $duplicateCheck) {
+			//plain duplicate checks on fields and relations
 			if(is_string($duplicateCheck)) {
-				$field = Convert::raw2sql($duplicateCheck);
-				//skip current duplicate check if field value is empty
-				if(!isset($record[$field]) || empty($record[$field])) {
-					continue;
-				}
+				$fieldName = $duplicateCheck;
 				//If the dupilcate check is a dot notation, then convert to ID relation
 				if(strpos($duplicateCheck, '.') !== false){
-					list($duplicateCheck, $columnName) = explode('.', $duplicateCheck);
-					$field = $relationName."ID";
+					list($relationName, $columnName) = explode('.', $duplicateCheck);
+					$fieldName = $relationName."ID";
+				}
+
+				//TODO: also convert plain relation names to include ID
+
+				//skip current duplicate check if field value is empty
+				if(!isset($record[$fieldName]) || empty($record[$fieldName])) {
+					continue;
 				}
 				$existingRecord = $class::get()
-									->filter($field, $record[$field])
+									->filter($fieldName, $record[$fieldName])
 									->first();
 				if($existingRecord) {
 					return $existingRecord;
 				}
-			} elseif(
+			}
+			//callback duplicate checks
+			elseif(
 				is_array($duplicateCheck) &&
 				isset($duplicateCheck['callback']) &&
 				is_callable($duplicateCheck['callback'])
