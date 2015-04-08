@@ -28,7 +28,21 @@ class BulkLoaderRelationTest extends SapphireTest{
 		);
 	}
 
-	//this is the default behaviour
+	/**
+	 * This default behaviour should act the same as
+	 * testLinkAndCreateRelations
+	 */
+	public function testEmptyBehaviour() {
+		$results = $this->loader->load();
+		$this->assertEquals(3, $results->CreatedCount(),
+			"objs have been created from all records");
+		$this->assertEquals(4, BulkLoaderRelationTest_Course::get()->count(),
+			"New Geometry 722 course created");
+		$this->assertEquals(4, BulkLoaderRelationTest_CourseSelection::get()
+					->filter("CourseID:GreaterThan", 0)->count(),
+				"we have gone from 1 to 4 linked records");
+	}
+
 	public function testLinkAndCreateRelations() {
 		$this->loader->transforms['Course.Title'] = array(
 			'link' => true,

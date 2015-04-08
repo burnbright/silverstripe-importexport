@@ -26,10 +26,16 @@ class BetterBulkLoader extends BulkLoader {
 	public $recordCallback;
 
 	/**
-	 * Write new relations to DB when they don't exist.
+	 * The default behaviour for linking relations
 	 * @var boolean
 	 */
-	protected $writeNewRelations = true;
+	protected $relationLinkDefault = true;
+
+	/**
+	 * The default behaviour creating relations
+	 * @var boolean
+	 */
+	protected $relationCreateDefault = true;
 
 	/**
 	 * Cache the result of getMappableColumns
@@ -53,6 +59,26 @@ class BetterBulkLoader extends BulkLoader {
 	 */
 	public function getSource() {
 		return $this->source;
+	}
+
+	/**
+	 * Set the default behaviour for linking existing relation objects.
+	 * @param boolean $default
+	 * @return BulkLoader
+	 */
+	public function setRelationLinkDefault($default) {
+		$this->relationLinkDefault = $default;
+		return $this;	
+	}
+
+	/**
+	 * Set the default behaviour for creating new relation objects.
+	 * @param boolean $default
+	 * @return BulkLoader
+	 */
+	public function setRelationCreateDefault($default) {
+		$this->relationCreateDefault = $default;
+		return $this;	
 	}
 
 	public function load($filepath = null) {
@@ -182,7 +208,6 @@ class BetterBulkLoader extends BulkLoader {
 			if($callback){
 				$relation = $callback($value, $placeholder);
 				$relationName = $field;
-
 				//convert any use of dot notation
 				if(strpos($field, '.') !== false){
 					list($relationName, $columnName) = explode('.', $field);
@@ -206,18 +231,11 @@ class BetterBulkLoader extends BulkLoader {
 			}
 			//link and create relation objects
 			$linkexisting = isset($this->transforms[$field]['link']) &&
-								$this->transforms[$field]['link'];
+								$this->transforms[$field]['link'] ? 
+								true : $this->relationLinkDefault;
 			$createnew = isset($this->transforms[$field]['create']) &&
-								$this->transforms[$field]['create'];
-
-			//default behaviour
-			if(
-				!isset($this->transforms[$field]['link']) &&
-				!isset($this->transforms[$field]['create'])
-			){
-				$linkexisting = true;
-				$createnew = true;
-			}
+								$this->transforms[$field]['create'] ?
+								true : $this->relationCreateDefault;
 
 			//ditch relation if we aren't linking
 			if(!$linkexisting && $relation && $relation->isInDB()){
@@ -228,11 +246,11 @@ class BetterBulkLoader extends BulkLoader {
 				//TODO: try/catch write validation?
 				$relation->write();
 			}
-
+			//write changes to existing relations
+			//TODO: make this behaviour customisable
 			if($relation && $relation->isInDB() && $relation->isChanged()){
 				$relation->write();
 			}
-
 			//add the relation id to the placeholder
 			if($relationName && $relation && $relation->exists()){
 				$placeholder->{$relationName."ID"} = $relation->ID;

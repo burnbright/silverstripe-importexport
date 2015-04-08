@@ -101,7 +101,7 @@ $this->loader->transforms = array(
 );
 ```
 
-## Customise how relationships are handled
+## Creating and linking related DataObjects
 
 The bulk loader can handle linking and creating `has_one` relationship objects, by either providing a callback, or using the `Relation.FieldName` style "dot notation". Relationship handling is also performed in the `transformations` array.
 
