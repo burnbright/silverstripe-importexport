@@ -9,10 +9,10 @@ Import and export data from SilverStripe in various forms, including CSV. This m
 1. Raw data is retrieved from a source (`BulkLoaerSource`).
 2. Data is provided as iterable rows (each row is heading->value mapped array).
 3. Rows are mapped to a standardised format, based on a user/developer provided mapping.
-4. Data is set/linked/tranformed on new object.
-5. New object is validated.
-6. New object is saved.
-7. Results are stored in `BulkLoader_Result`
+4. Data is set/linked/tranformed onto a placeholder DataObject.
+5. Existing record replaces placeholder, or placeholder becomes the brand new DataObject.
+5. DataObject is validated and saved.
+7. All results are stored in `BulkLoader_Result`.
 
 ## User-defined column mapping
 
@@ -20,9 +20,7 @@ Users can choose which columns map to DataObject fields. This removes any need t
 
 Users can state if the first line of data is infact a heading row.
 
-## Usage
-
-### Grid Field Importer
+## Grid Field Importer
 
 This is a grid field component for users to selecting a CSV file and map it's columns to data fields.
 
@@ -33,7 +31,7 @@ $gridConfig->addComponent($importer);
 
 The importer makes use of the `CSVFieldMapper`, which displays the beginning content of a CSV.
 
-### BulkLoaderSource
+## BulkLoaderSource
 
 A `BulkLoaderSource` provides an iterator to get record data from. Data could come from anywhere such as a CSV file, a web API, etc.
 
@@ -51,7 +49,7 @@ foreach($source->getIterator() as $record){
 }
 ```
 
-### (Better)BulkLoader
+## (Better)BulkLoader
 
 * Saves data from a particular source and persists it to database via the ORM.
 * Determines which fields can be mapped to, either scaffoleded from the model, provided by configuration, or both.
@@ -70,7 +68,7 @@ $loader->setSource($source);
 $result = $loader->load();
 ```
 
-### ListBulkLoader
+## ListBulkLoader
 
 Often you'll want to confine bulk loading to a specific DataList. The ListBulkLoader is a varaition of BulkLoader that adds and removes records from a given DataList. Of course DataList iself doesn't have an add method implemented, so you'll probably find it more useful for a `HasManyList`.
 
