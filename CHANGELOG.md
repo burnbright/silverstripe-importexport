@@ -11,6 +11,10 @@
 * Replaced CSVParser with goodby/csv library.
 * Customisation control over fields for which relation objects are created and/or linked.
 
+## Removed Features
+
+* No longer can you specify a callback by giving the name of the callback, it must now be an anonmyous function. This includes using '->', and 'importFunctionName' to specify functions that are written on the $obj, or on a subclass of the loader.
+
 ## Bug Fixes
 
 * Validation failing on DataObject->write() will cause a record to be skipped, rather than halting the whole process.
@@ -19,4 +23,3 @@
 ## Upgrading Notes
 
 * You'll need to seperately define a BulkLoaderSource when configuring your BulkLoader. 
-* No longer can you specify a callback by giving the name of the callback, it must now be an anonmyous function.
