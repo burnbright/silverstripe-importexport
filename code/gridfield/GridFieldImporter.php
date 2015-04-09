@@ -15,7 +15,7 @@ class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler 
 	 * Type of BulkLoader to load with
 	 * @var string
 	 */
-	protected $loaderClass = "ListBulkLoader";
+	protected $loaderClass = null;
 
 	/**
 	 * 
@@ -143,13 +143,18 @@ class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler 
 	 */
 	public function getLoader($gridField) {
 		$class = $this->loaderClass;
-		//allow using list bulk loaders instead of bulk loaders
+		$gridlist = $gridField->getList();
+		//choose default if no loader class set
+		if(!$class){
+			$class = ($gridlist instanceof HasManyList) ?
+				"ListBulkLoader" : "BetterBulkLoader";
+		}
+		//set the correct constructor argument
 		$arg = (is_subclass_of($class, "ListBulkLoader")) ?
-					 $gridField->getList() : $gridField->getModelClass();
+			$gridlist : $gridField->getModelClass();
+
 		$loader = new $class($arg);
-
 		$loader->setSource(new CsvBulkLoaderSource());
-
 		if($this->recordcallback && property_exists($class, 'recordCallback')){
 			$loader->recordCallback = $this->recordcallback;
 		}
