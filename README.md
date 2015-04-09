@@ -187,6 +187,22 @@ $loader->duplicateChecks = array(
 );
 ```
 
+## Replace all the "legacy" ModelAdmin importers
+
+Some simple yaml config options to help with swapping out all the importer functionality.
+
+```yaml
+ModelAdmin:
+    removelegacyimporters: true
+    addbetterimporters: true
+```
+
+Remove only the scafolded (non-custom) importers:
+```yaml
+ModelAdmin:
+    removelegacyimporters: scaffolded
+```
+
 ## Troubleshooting
 
 If you are writing relation objects during loading, and they fail validation, the loader will simply ignore that relation object.
