@@ -18,12 +18,6 @@ class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler 
 	protected $loaderClass = null;
 
 	/**
-	 * 
-	 * @var string
-	 */
-	protected $recordcallback;
-
-	/**
 	 * Can the user clear records
 	 * @var boolean
 	 */
@@ -39,17 +33,6 @@ class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler 
 	 */
 	public function setLoaderClass($class){
 		$this->loaderClass = $class;
-
-		return $this;
-	}
-
-	/**
-	 * Define a callback to be run on each imported record
-	 * (if recordCallback property can be set on loader)
-	 * @param callable $callback
-	 */
-	public function setRecordCallback($callback) {
-		$this->recordcallback = $callback;
 
 		return $this;
 	}
@@ -155,9 +138,6 @@ class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler 
 
 		$loader = new $class($arg);
 		$loader->setSource(new CsvBulkLoaderSource());
-		if($this->recordcallback && property_exists($class, 'recordCallback')){
-			$loader->recordCallback = $this->recordcallback;
-		}
 
 		return $loader;
 	}
