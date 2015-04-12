@@ -13,7 +13,7 @@ class ListBulkLoader extends BetterBulkLoader {
 
 	public function __construct(DataList $list) {
 		$this->list = $list;
-
+		//TODO: user error if list is null
 		parent::__construct($this->list->dataClass());
 	}
 
@@ -23,8 +23,12 @@ class ListBulkLoader extends BetterBulkLoader {
 		return $this;
 	}
 
-	public function getList(){
-		return $this->getList();
+	/**
+	 * Get the DataList of objects this loader applies to.
+	 * @return DataList
+	 */
+	public function getDataList() {
+		return $this->list;
 	}
 
 	/**

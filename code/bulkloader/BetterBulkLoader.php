@@ -93,8 +93,17 @@ class BetterBulkLoader extends BulkLoader {
 	/**
 	 * Delete all existing records
 	 */
-	public function deleteExistingRecords(){
+	public function deleteExistingRecords() {
 		DataObject::get($this->objectClass)->removeAll();
+	}
+
+	/**
+	 * Get the DataList of objects this loader applies to.
+	 * @return DataList
+	 */
+	public function getDataList() {
+		$class = $this->objectClass;
+		return $class::get();
 	}
 
 	/**
@@ -122,7 +131,7 @@ class BetterBulkLoader extends BulkLoader {
 	/**
 	 * Import the given record
 	 */
-	protected function processRecord($record, $columnMap, &$results, $preview = false){
+	protected function processRecord($record, $columnMap, &$results, $preview = false) {
 		if(!$this->validateRecord($record)){
 			$results->addSkipped("Empty/invalid record data.");
 			return;
@@ -238,17 +247,17 @@ class BetterBulkLoader extends BulkLoader {
 			}
 			//write relation object, if configured
 			if($createnew && $relation && !$relation->isInDB()){
-				//fail validation gracefully
-				try{
+			//fail validation gracefully
+			try{
 					$relation->write();
 				}catch(ValidationException $e){
 					$relation = null;
 				}
-			}
-			//write changes to existing relations
-			else if($relation && $relation->isInDB() && $relation->isChanged()){
-				$relation->write();
-			}
+				}
+				//write changes to existing relations
+				else if($relation && $relation->isInDB() && $relation->isChanged()){
+					$relation->write();
+				}
 			//add the relation id to the placeholder
 			if($relationName && $relation && $relation->exists()){
 				$placeholder->{$relationName."ID"} = $relation->ID;
@@ -365,7 +374,7 @@ class BetterBulkLoader extends BulkLoader {
 				if(!isset($record[$fieldName]) || empty($record[$fieldName])) {
 					continue;
 				}
-				$existingRecord = $class::get()
+				$existingRecord = $this->getDataList()
 									->filter($fieldName, $record[$fieldName])
 									->first();
 				if($existingRecord) {
