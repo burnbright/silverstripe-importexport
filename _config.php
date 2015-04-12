@@ -3,5 +3,5 @@
 ModelAdmin::add_extension("ImportAdminExtension");
 $remove = Config::inst()->get('ModelAdmin','removelegacyimporters');
 if($remove === "scaffolded"){
-	$conf->update("ModelAdmin", 'model_importers', array());
+	Config::inst()->update("ModelAdmin", 'model_importers', array());
 }
