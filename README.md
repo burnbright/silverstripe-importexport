@@ -202,16 +202,18 @@ $loader->duplicateChecks = array(
 Duplicates can also be found using a callback function:
 ```php
 $loader->duplicateChecks = array(
-    "FooBar" => function($fieldName, $record) {
-        if(!isset($record["FirstName"]) || !isset($record["LastName"])){
-            return null;
-        }
+    "FooBar" => array(
+        "callback" => function($fieldName, $record) {
+            if(!isset($record["FirstName"]) || !isset($record["LastName"])){
+                return null;
+            }
 
-        return Person::get()
-            ->filter("FirstName", $record['FirstName'])
-            ->filter("LastName", $record['LastName'])
-            ->first();
-    }
+            return Person::get()
+                ->filter("FirstName", $record['FirstName'])
+                ->filter("LastName", $record['LastName'])
+                ->first();
+        }
+    )
 );
 ```
 
