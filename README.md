@@ -20,6 +20,8 @@ Users can choose which columns map to DataObject fields. This removes any need t
 
 Users can state if the first line of data is infact a heading row.
 
+![gridfieldimporter](https://cloud.githubusercontent.com/assets/1356335/7108697/24db13c4-e1e2-11e4-9ff1-86d42144201b.gif)
+
 ## Grid Field Importer
 
 This is a grid field component for users to selecting a CSV file and map it's columns to data fields.
