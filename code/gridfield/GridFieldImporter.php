@@ -12,10 +12,10 @@ class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler 
 	protected $targetFragment;
 
 	/**
-	 * Type of BulkLoader to load with
+	 * The BulkLoader to load with
 	 * @var string
 	 */
-	protected $loaderClass = null;
+	protected $loader = null;
 
 	/**
 	 * Can the user clear records
@@ -28,13 +28,42 @@ class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler 
 	}
 
 	/**
-	 * Set the type of BulkLoader to handle imports
-	 * @param string $class
+	 * Set the bulk loader for this importer
+	 * @param BulkLoader
 	 */
-	public function setLoaderClass($class){
-		$this->loaderClass = $class;
+	public function setLoader(BulkLoader $loader) {
+		$this->loader = $loader;
 
 		return $this;
+	}
+
+	/**
+	 * Get the BulkLoader
+	 * @return BulkLoader
+	 */
+	public function getLoader(GridField $gridField) {
+		if(!$this->loader){
+			$this->loader = $this->scaffoldLoader($gridField);
+		}
+
+		return $this->loader;
+	}
+
+	/**
+	 * Scaffold a bulk loader, if none is provided
+	 */
+	public function scaffoldLoader(GridField $gridField) {
+		$gridlist = $gridField->getList();
+		$class = ($gridlist instanceof HasManyList) ?
+				"ListBulkLoader" : "BetterBulkLoader";
+		//set the correct constructor argument
+		$arg = ($class === "ListBulkLoader" || 
+			is_subclass_of($class, "ListBulkLoader")) ?
+				$gridlist : $gridField->getModelClass();
+		$loader = new $class($arg);
+		$loader->setSource(new CsvBulkLoaderSource());
+
+		return $loader;
 	}
 
 	/**
@@ -44,10 +73,16 @@ class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler 
 		$this->canClearData = $canClearData;
 	}
 
+	/**
+	 * Get can clear data flag
+	 */
 	public function getCanClearData() {
 		return $this->canClearData;
 	}
 
+	/**
+	 * Get the html/css button and upload field to perform import.
+	 */
 	public function getHTMLFragments($gridField) {
 		$button = new GridField_FormAction(
 			$gridField, 
@@ -58,17 +93,13 @@ class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler 
 		);
 		$button->setAttribute('data-icon', 'upload-csv');
 		$button->addExtraClass('no-ajax');
-
 		$uploadfield = $this->getUploadField($gridField);
-
 		$data = array(
 			'Button' => $button,
 			'UploadField' => $uploadfield
 		);
-
 		$importerHTML = ArrayData::create($data)
 					->renderWith("GridFieldImporter");
-
 		Requirements::javascript('importexport/javascript/GridFieldImporter.js');
 
 		return array(
@@ -82,7 +113,7 @@ class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler 
 	 * @param  GridField $gridField Current GridField
 	 * @return UploadField          Configured UploadField instance
 	 */
-	public function getUploadField($gridField) {
+	public function getUploadField(GridField $gridField) {
 		$uploadField = UploadField::create(
 				$gridField->Name."_ImportUploadField", 'Upload CSV'
 			)
@@ -119,27 +150,6 @@ class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler 
 		$handler    = new GridFieldImporter_Request($gridField, $this, $controller);
 
 		return $handler->handleRequest($request, DataModel::inst());
-	}
-
-	/**
-	 * Get the BulkLoader
-	 */
-	public function getLoader($gridField) {
-		$class = $this->loaderClass;
-		$gridlist = $gridField->getList();
-		//choose default if no loader class set
-		if(!$class){
-			$class = ($gridlist instanceof HasManyList) ?
-				"ListBulkLoader" : "BetterBulkLoader";
-		}
-		//set the correct constructor argument
-		$arg = (is_subclass_of($class, "ListBulkLoader")) ?
-			$gridlist : $gridField->getModelClass();
-
-		$loader = new $class($arg);
-		$loader->setSource(new CsvBulkLoaderSource());
-
-		return $loader;
 	}
 
 }

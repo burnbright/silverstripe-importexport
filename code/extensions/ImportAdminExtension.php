@@ -21,11 +21,11 @@ class ImportAdminExtension extends Extension{
 			$modelclass = $this->owner->modelClass;
 			$grid = $form->Fields()->fieldByName($modelclass);
 			$config =  $grid->getConfig();
-			//don't add another
+			//don't proceed if there is already an importer
 			if($config->getComponentByType("GridFieldImporter")){
 				return;
 			}
-			$config->addComponent(new GridFieldImporter('before'));			
+			$config->addComponent(new GridFieldImporter('before'));
 		}
 	}
 

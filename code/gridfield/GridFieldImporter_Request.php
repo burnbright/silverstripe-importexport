@@ -108,24 +108,18 @@ class GridFieldImporter_Request extends RequestHandler {
 		if(!$file){
 			return "file not found";
 		}
-
 		//TODO: validate file?
-
 		$mapper = new CSVFieldMapper($file->getFullPath());
 		$mapper->setMappableCols($this->getMappableColumns());
-
 		$form = $this->MapperForm();
 		$form->Fields()->unshift(
 			new LiteralField('mapperfield', $mapper->forTemplate())
 		);
-
 		$form->setFormAction($this->Link('import').'/'.$file->ID);
-
 		$content = ArrayData::create(array(
 			'File' => $file,
 			'MapperForm'=> $form
 		))->renderWith('GridFieldImporter_preview');
-		
 		$controller = $this->getToplevelController();
 		
 		return $controller->customise(array(
