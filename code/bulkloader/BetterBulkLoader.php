@@ -11,11 +11,6 @@
  */
 class BetterBulkLoader extends BulkLoader {
 
-	/**
-	 * Bulk loading source
-	 * @var BulkLoaderSource
-	 */
-	protected $source;
 
 	public $transforms = array();
 
@@ -24,6 +19,13 @@ class BetterBulkLoader extends BulkLoader {
 	 * @var Closure
 	 */
 	public $recordCallback;
+
+
+	/**
+	 * Bulk loading source
+	 * @var BulkLoaderSource
+	 */
+	protected $source;
 
 	/**
 	 * The default behaviour for linking relations
@@ -169,6 +171,13 @@ class BetterBulkLoader extends BulkLoader {
 		}else{
 			$obj = $placeholder;
 		}
+
+		//callback access to every object
+		if(is_callable($this->recordCallback)){
+			$callback  = $this->recordCallback;
+			$callback($obj, $record);
+		}
+
 		$changed = $existing && $obj->isChanged();
 		//try/catch for potential write() ValidationException
 		try{
