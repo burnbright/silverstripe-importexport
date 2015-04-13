@@ -164,6 +164,20 @@ $loader->transforms = array(
 
 Note that `$placeholder` in the above example refers to a dummy DataObject that is populated in order to then be saved, or checked against for duplicates. You should not call `$placeholder->write()` in your callback.
 
+## Specify a relation list
+
+In the same way that you may use a `ListBulkLoader` to constrain records to a given DataList, you may also want to constrain the relation records to a List.
+
+```php
+$loader->transforms = array(
+    //link and create courses
+    'Course.Title' = array(
+        'list' => $self->Courses()
+    )
+);
+```
+
+
 ## Determining when to overwrite existing (duplicate) DataObjects
 
 Duplicate checks are performed on record data, mapped into the standardised form.

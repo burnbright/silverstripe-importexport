@@ -253,7 +253,10 @@ class BetterBulkLoader extends BulkLoader {
 		if($this->isRelation($field)){
 			$relation = null;
 			$relationName = null;
-
+			//get the list that relation is added to/checked on
+			$relationlist = isset($this->transforms[$field]['list']) &&
+							$this->transforms[$field]['list'] instanceof SS_List ?
+							$this->transforms[$field]['list'] : null;
 			//get/make relation via callback
 			if($callback){
 				$relation = $callback($value, $placeholder);
@@ -267,6 +270,9 @@ class BetterBulkLoader extends BulkLoader {
 			else if(strpos($field, '.') !== false){
 				list($relationName, $columnName) = explode('.', $field);
 				if($relationClass = $placeholder->getRelationClass($relationName)){
+					if(!$relationlist){
+						$relationlist = $relationlist;
+					}
 					$relation = $relationClass::get()
 									->filter($columnName, $value)
 									->first();

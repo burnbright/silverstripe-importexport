@@ -117,10 +117,29 @@ class BulkLoaderRelationTest extends SapphireTest{
 		$this->assertEquals(0, $results->SkippedCount(), "0 skipped");
 		$this->assertEquals(1, $results->UpdatedCount(), "1 updated");
 
-		//TODO: test using {RelationName}ID and {RelationName}
+		$this->markTestIncomplete("test using {RelationName}ID and {RelationName}");
 	}
 
-	//TODO: test skip duplicate record
+	public function testRelationList() {
+		$list = new ArrayList();
+		$this->loader->transforms['Course.Title'] = array(
+			'create' => true,
+			'link' => true,
+			'list' => $list
+		);
+		$results = $this->loader->load();
+		$this->assertEquals(3, $results->CreatedCount(), "3 records created");
+		$this->assertEquals(3, $list->count(), "3 relations created");
+
+		//make sure re-run doesn't change relation list
+		$results = $this->loader->load();
+		$this->assertEquals(3, $results->CreatedCount(), "3 more records created");
+		$this->assertEquals(3, $list->count(), "relation list count remains the same");
+	}
+
+	public function testRequiredRelation() {
+		$this->markTestIncomplete("Required relations should be checked");
+	}
 
 }
 
