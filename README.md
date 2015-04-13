@@ -6,7 +6,7 @@ Import and export data from SilverStripe in various forms, including CSV. This m
 
 ## The loading process
 
-1. Raw data is retrieved from a source (`BulkLoaerSource`).
+1. Raw data is retrieved from a source (`BulkLoaderSource`).
 2. Data is provided as iterable rows (each row is heading->value mapped array).
 3. Rows are mapped to a standardised format, based on a user/developer provided mapping.
 4. Data is set/linked/tranformed onto a placeholder DataObject.
