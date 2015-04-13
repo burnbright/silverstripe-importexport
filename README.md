@@ -111,9 +111,9 @@ You may want to perform some transformations to incoming record data. This can b
 ```php
 $loader->transforms = array(
     'Code' => array(
-        'callback' => function($field, $record) {
+        'callback' => function($value, $placeholder) {
             //capitalize course codes
-            return strtoupper($record[$field]));
+            return strtoupper($value);
         }
     )
 );
