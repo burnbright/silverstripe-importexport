@@ -36,7 +36,7 @@ class BetterBulkLoader_Result extends BulkLoader_Result {
 		$output =  array();
 		if($this->CreatedCount()) {
 			$output['created'] = _t(
-				'BulkLoader.IMPORTEDRECORDS', "Imported {count} records.",
+				'BulkLoader.IMPORTEDRECORDS', "Imported {count} new records.",
 				array('count' => $this->CreatedCount())
 			);
 		}
@@ -54,7 +54,7 @@ class BetterBulkLoader_Result extends BulkLoader_Result {
 		}
 		if($this->SkippedCount()) {
 			$output['skipped'] =  _t(
-				'BulkLoader.SKIPPEDRECORDS', "Skipped {count} records.",
+				'BulkLoader.SKIPPEDRECORDS', "Skipped {count} bad records.",
 				array('count' => $this->SkippedCount())
 			);
 		}

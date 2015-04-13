@@ -384,7 +384,6 @@ class BetterBulkLoader extends BulkLoader {
 					list($relationName, $columnName) = explode('.', $duplicateCheck);
 					$fieldName = $relationName."ID";
 				}
-
 				//TODO: also convert plain relation names to include ID
 
 				//skip current duplicate check if field value is empty
