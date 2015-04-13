@@ -430,6 +430,7 @@ class BetterBulkLoader extends BulkLoader {
 			$transformables = array_combine($transformables, $transformables);
 			$scaffolded = array_merge($transformables, $scaffolded);
 		}
+		natcasesort($scaffolded);
 
 		return $scaffolded;
 	}
@@ -458,13 +459,18 @@ class BetterBulkLoader extends BulkLoader {
 	}
 
 	/**
-	 * Get the fields and labels for a given class, sorted naturally.
+	 * Get the fields and labels for a given class
 	 * @param  string $class
 	 * @return array fields
 	 */
 	protected function getMappableFieldsForClass($class) {
-		$fields = (array)singleton($class)->fieldLabels(false);
-		natcasesort($fields);
+		$singleton = singleton($class);
+		$fields = (array)$singleton->fieldLabels(false);
+		foreach($fields as $field => $label){
+			if(!$singleton->db($field)){
+				unset($fields[$field]);
+			}
+		}
 
 		return $fields;
 	}
