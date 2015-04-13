@@ -63,11 +63,11 @@ class BulkLoaderTest extends SapphireTest{
 		$this->assertEquals($joe->Country()->Code, "NZ");
 	}
 
-	public function testColumnMap(){
+	public function testColumnMap() {
 		$this->markTestIncomplete("Implement this");
 	}
 
-	public function testTransformCallback(){
+	public function testTransformCallback() {
 		$loader = new BetterBulkLoader("BulkLoaderTest_Person");
 		$data = array(
 			array("FirstName" => "joe", "age" => "62", "country" => "NZ")
@@ -84,6 +84,27 @@ class BulkLoaderTest extends SapphireTest{
 		$this->assertEquals($results->CreatedCount(), 1);
 		$result = $results->Created()->first();
 		$this->assertEquals("JOE", $result->FirstName, "First name has been transformed");
+	}
+
+	public function testRequiredFields() {
+		$loader = new BetterBulkLoader("BulkLoaderTest_Person");
+		$data = array(
+			array("FirstName" => "joe", "Surname" => "Bloggs"), //valid
+			array("FirstName" => 0, "Surname" => "Bloggs"), //invalid firstname
+			array("FirstName" => null), //invalid firstname
+			array("FirstName" => "", "Surname" => ""), //invalid firstname
+			array("age" => "25", "Surname" => "Smith"), //invalid firstname
+			array("FirstName" => "Jane"), //valid
+		);
+		$loader->setSource(new ArrayBulkLoaderSource($data));
+		$loader->transforms = array(
+			'FirstName' => array(
+				'required' => true
+			)
+		);
+		$results = $loader->load();
+		$this->assertEquals(2, $results->CreatedCount(), "Created 2");
+		$this->assertEquals(4, $results->SkippedCount(), "Skipped 4");
 	}
 
 }

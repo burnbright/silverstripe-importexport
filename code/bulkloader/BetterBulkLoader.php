@@ -132,12 +132,17 @@ class BetterBulkLoader extends BulkLoader {
 	 * Import the given record
 	 */
 	protected function processRecord($record, $columnMap, &$results, $preview = false) {
-		if(!$this->validateRecord($record)){
+		if(!is_array($record) || empty($record) || !array_filter($record)){
 			$results->addSkipped("Empty/invalid record data.");
 			return;
 		}
 		//map incoming record according to the standardisation mapping (columnMap)
 		$record = $this->columnMapRecord($record);
+		//skip if required data is not present
+		if(!$this->hasRequiredData($record)){
+			$results->addSkipped("Required data is missing.");
+			return;
+		}
 		$modelClass = $this->objectClass;
 		$placeholder = new $modelClass();
 
@@ -193,6 +198,48 @@ class BetterBulkLoader extends BulkLoader {
 	}
 
 	/**
+	 * Convert the record's keys to appropriate columnMap keys.
+	 * @return array record
+	 */
+	protected function columnMapRecord($record){
+		$adjustedmap = $this->columnMap;
+		$newrecord = array();
+		foreach($record as $field => $value){
+			if(isset($adjustedmap[$field])){
+				$newrecord[$adjustedmap[$field]] = $value;
+			}else{
+				$newrecord[$field] = $value;
+			}
+		}
+
+		return $newrecord;
+	}
+
+	/**
+	 * Check if the given mapped record has the required data.
+	 * @param  array $mappedrecord
+	 * @return boolean
+	 */
+	protected function hasRequiredData($mappedrecord) {
+		if(!is_array($mappedrecord) || empty($mappedrecord) || !array_filter($mappedrecord)){
+			return false;
+		}
+		foreach ($this->transforms as $field => $t) {
+			if(
+				is_array($t) &&
+				isset($t['required']) &&
+				$t['required'] === true &&
+				(!isset($mappedrecord[$field]) ||
+				empty($mappedrecord[$field]))
+			){
+				return false;
+			}
+		}
+		
+		return true;
+	}
+
+	/**
 	 * Perform field transformation or setting of data on placeholder.
 	 * @param  DataObject $placeholder
 	 * @param  string $field
@@ -233,31 +280,33 @@ class BetterBulkLoader extends BulkLoader {
 				}
 			}
 			//link and create relation objects
-			
 			$linkexisting = isset($this->transforms[$field]['link']) ?
 								(bool)$this->transforms[$field]['link'] : 
 								$this->relationLinkDefault;
 			$createnew = isset($this->transforms[$field]['create']) ?
 								(bool)$this->transforms[$field]['create'] :
 								$this->relationCreateDefault;
-
 			//ditch relation if we aren't linking
 			if(!$linkexisting && $relation && $relation->isInDB()){
 				$relation = null;
 			}
-			//write relation object, if configured
-			if($createnew && $relation && !$relation->isInDB()){
 			//fail validation gracefully
 			try{
+				//write relation object, if configured
+				if($createnew && $relation && !$relation->isInDB()){
 					$relation->write();
-				}catch(ValidationException $e){
-					$relation = null;
-				}
 				}
 				//write changes to existing relations
 				else if($relation && $relation->isInDB() && $relation->isChanged()){
 					$relation->write();
 				}
+				//add relation to relationlist, if it exists
+				if($relationlist && !$relationlist->byID($relation->ID)){
+					$relationlist->add($relation);
+				}
+			}catch(ValidationException $e){
+				$relation = null;
+			}
 			//add the relation id to the placeholder
 			if($relationName && $relation && $relation->exists()){
 				$placeholder->{$relationName."ID"} = $relation->ID;
@@ -293,42 +342,6 @@ class BetterBulkLoader extends BulkLoader {
 	}
 
 	/**
-	 * Convert the record's keys to appropriate columnMap keys.
-	 * @return array record
-	 */
-	protected function columnMapRecord($record){
-		$adjustedmap = $this->columnMap;
-		$newrecord = array();
-		foreach($record as $field => $value){
-			if(isset($adjustedmap[$field])){
-				$newrecord[$adjustedmap[$field]] = $value;
-			}else{
-				$newrecord[$field] = $value;
-			}
-		}
-
-		return $newrecord;
-	}
-
-	/**
-	 * Basic record checks to ensure they conform to
-	 * expected BulkLoaderSource format.
-	 * 
-	 * @param  array $record
-	 * @return boolean
-	 */
-	protected function validateRecord($record){
-		if(!is_array($record)){
-			return false;
-		}
-		if(empty($record)){
-			return false;
-		}
-
-		return true;
-	}
-
-	/**
 	 * Given a record field name, find out if this is a relation name
 	 * and return the name.
 	 * @param string
@@ -355,8 +368,6 @@ class BetterBulkLoader extends BulkLoader {
 	 * @return mixed
 	 */
 	public function findExistingObject($record) {
-		$class = $this->objectClass;
-		$singleton = singleton($class);
 		// checking for existing records (only if not already found)
 		foreach($this->duplicateChecks as $fieldName => $duplicateCheck) {
 			//plain duplicate checks on fields and relations

@@ -117,6 +117,20 @@ $loader->transforms = array(
 );
 ```
 
+## Require specific data to be present
+
+Incoming records without required data will be skipped.
+
+```php
+$loader->transforms = array(
+    'Title' => array(
+        'required' => true
+    )
+);
+```
+
+Note that empty records are skipped by default.
+
 ## Creating and linking related DataObjects
 
 The bulk loader can handle linking and creating `has_one` relationship objects, by either providing a callback, or using the `Relation.FieldName` style "dot notation". Relationship handling is also performed in the `transformations` array.
