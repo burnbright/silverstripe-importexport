@@ -17,8 +17,8 @@ Import and export data from SilverStripe in various forms, including CSV. This m
 ## User-defined column mapping
 
 Users can choose which columns map to DataObject fields. This removes any need to define headings, or headings according to a given schema.
-
 Users can state if the first line of data is infact a heading row.
+Mappings are saved for the next time an import is done on the same GridField.
 
 ![gridfieldimporter](https://cloud.githubusercontent.com/assets/1356335/7108697/24db13c4-e1e2-11e4-9ff1-86d42144201b.gif)
 

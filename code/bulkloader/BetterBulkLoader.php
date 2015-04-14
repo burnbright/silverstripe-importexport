@@ -11,7 +11,10 @@
  */
 class BetterBulkLoader extends BulkLoader {
 
-
+	/**
+	 * Transformation and relation handling
+	 * @var array
+	 */
 	public $transforms = array();
 
 	/**
@@ -19,7 +22,6 @@ class BetterBulkLoader extends BulkLoader {
 	 * @var Closure
 	 */
 	public $recordCallback;
-
 
 	/**
 	 * Bulk loading source
@@ -379,7 +381,6 @@ class BetterBulkLoader extends BulkLoader {
 	 * specified via {@link self::$duplicateChecks}.
 	 *
 	 * @param array $record data
-	 *
 	 * @return mixed
 	 */
 	public function findExistingObject($record) {
