@@ -78,19 +78,15 @@ class GridFieldImporter_Request extends RequestHandler {
 	public function upload(SS_HTTPRequest $request) {
 		$field = $this->getUploadField();
 		$uploadResponse = $field->upload($request);
-
 		//decode response body. ugly hack ;o
 		$body = Convert::json2array( $uploadResponse->getBody() );
 		$body = array_shift($body);
-
 		//add extra data
 		$body['import_url'] = Controller::join_links(
 			$this->Link('preview'), $body['id']
 		);
-
 		//don't return buttons at all
 		unset($body['buttons']);
-
 		//re-encode
 		$response = new SS_HTTPResponse(Convert::raw2json(array($body)));
 		
@@ -111,6 +107,11 @@ class GridFieldImporter_Request extends RequestHandler {
 		//TODO: validate file?
 		$mapper = new CSVFieldMapper($file->getFullPath());
 		$mapper->setMappableCols($this->getMappableColumns());
+		//load previously stored values
+		if($cachedmapping = $this->getCachedMapping()){
+			$mapper->loadDataFrom($cachedmapping);
+		}
+
 		$form = $this->MapperForm();
 		$form->Fields()->unshift(
 			new LiteralField('mapperfield', $mapper->forTemplate())
@@ -125,7 +126,6 @@ class GridFieldImporter_Request extends RequestHandler {
 		return $controller->customise(array(
 			'Content' => $content
 		));
-
 	}
 
 	/**
@@ -182,6 +182,9 @@ class GridFieldImporter_Request extends RequestHandler {
 			}
 			$colmap = Convert::raw2sql($request->postVar('mappings'));
 			if($colmap){
+				//save mapping to cache
+				$this->cacheMapping($colmap);
+				//do import
 				$results = $this->importFile(
 					$file->getFullPath(),
 					$colmap,
@@ -256,6 +259,34 @@ class GridFieldImporter_Request extends RequestHandler {
 		}
 
 		return $c;
+	}
+
+	/**
+	 * Store the user defined mapping for future use.
+	 */
+	protected function cacheMapping($mapping) {
+		$mapping = array_filter($mapping);
+		if($mapping && !empty($mapping)){
+			$cache = SS_Cache::factory('gridfieldimporter');
+			$cache->save(serialize($mapping), $this->cacheKey());
+		}
+	}
+
+	/**
+	 * Look for a previously stored user defined mapping.
+	 */
+	protected function getCachedMapping() {
+		$cache = SS_Cache::factory('gridfieldimporter');
+		if($result = $cache->load($this->cacheKey())){
+			return unserialize($result);
+		}
+	}
+
+	/**
+	 * Generate a cache key unique to this gridfield
+	 */
+	protected function cacheKey(){
+		return md5($this->gridField->Link());
 	}
 
 }
