@@ -42,6 +42,12 @@ class BetterBulkLoader extends BulkLoader {
 	protected $relationCreateDefault = true;
 
 	/**
+	 * Determines whether pages should be published during loading
+	 * @var boolean
+	 */
+	protected $publishPages = false;
+
+	/**
 	 * Cache the result of getMappableColumns
 	 * @var array
 	 */
@@ -83,6 +89,11 @@ class BetterBulkLoader extends BulkLoader {
 	public function setRelationCreateDefault($default) {
 		$this->relationCreateDefault = $default;
 		return $this;	
+	}
+
+	public function setPublishPages($dopubilsh){
+		$this->publishPages = $dopubilsh;
+		return $this;
 	}
 
 	public function load($filepath = null) {
@@ -185,6 +196,12 @@ class BetterBulkLoader extends BulkLoader {
 		try{
 			// write obj record
 			$obj->write();
+
+			//publish pages
+			if($this->publishPages && $obj instanceof SiteTree){
+				$obj->publish('Stage', 'Live');
+			}
+
 			// save to results
 			if($existing) {
 				if($changed){

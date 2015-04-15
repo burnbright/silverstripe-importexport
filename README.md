@@ -219,6 +219,13 @@ $loader->duplicateChecks = array(
 );
 ```
 
+## Publish pages during import
+
+If you are importing instances of SiteTree, you can have those pages automatically published using this configuration:
+```php
+$loader->setPublishPages(true);
+```
+
 ## Replace all the "legacy" ModelAdmin importers
 
 Some simple yaml config options to help with swapping out all the importer functionality.
