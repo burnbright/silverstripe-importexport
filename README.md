@@ -259,7 +259,16 @@ ModelAdmin:
 
 ## Troubleshooting
 
+### Missing relation objects
+
 If you are writing relation objects during loading, and they fail validation, the loader will simply ignore that relation object.
+
+### Multiple relation data fields not mapping to the same relation
+
+If you have mapped multiple fields mapping to the same relation, you may get situations where the incorrect existing relation object is joined. The first field that is mapped is the same field used to find the relation.
+For example, you'll likely want a Title to be used to find/create a relation, and then an Amount will be added to that same relation, rather than finding/creating a relation by an Amount, and setting the Title.
+
+Define the correct ordering using the mappableFields array to fix this.
 
 ## Contributions
 

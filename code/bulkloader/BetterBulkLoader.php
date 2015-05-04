@@ -288,26 +288,33 @@ class BetterBulkLoader extends BulkLoader {
 		if($this->isRelation($field)){
 			$relation = null;
 			$relationName = null;
+			//extract relationName and columnName, if present
+			if(strpos($field, '.') !== false){
+				list($relationName, $columnName) = explode('.', $field);
+			}else{
+				$relationName = $field;
+			}
 			//get the list that relation is added to/checked on
 			$relationlist = isset($this->transforms[$field]['list']) &&
 							$this->transforms[$field]['list'] instanceof SS_List ?
 							$this->transforms[$field]['list'] : null;
+			//check for the same relation set on the current record
+			if($placeholder->{$relationName."ID"}){
+				$relation = $placeholder->{$relationName}();
+				if($columnName){
+					$relation->{$columnName} = $value;
+				}
+			}
 			//get/make relation via callback
-			if($callback){
+			else if($callback){
 				$relation = $callback($value, $placeholder);
-				$relationName = $field;
-				//convert any use of dot notation
-				if(strpos($field, '.') !== false){
-					list($relationName, $columnName) = explode('.', $field);
+				if($columnName){
+					$relation->{$columnName} = $value;
 				}
 			}
 			//get/make relation via dot notation
-			else if(strpos($field, '.') !== false){
-				list($relationName, $columnName) = explode('.', $field);
+			else if($columnName){
 				if($relationClass = $placeholder->getRelationClass($relationName)){
-					if(!$relationlist){
-						$relationlist = $relationlist;
-					}
 					$relation = $relationClass::get()
 									->filter($columnName, $value)
 									->first();
@@ -320,6 +327,7 @@ class BetterBulkLoader extends BulkLoader {
 					$relation->{$columnName} = $value;
 				}
 			}
+
 			//link and create relation objects
 			$linkexisting = isset($this->transforms[$field]['link']) ?
 								(bool)$this->transforms[$field]['link'] : 

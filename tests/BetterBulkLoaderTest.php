@@ -29,7 +29,7 @@ class BetterBulkLoaderTest extends SapphireTest {
 	 * Test plain import with column auto-detection
 	 */
 	public function testLoad() {
-		$loader = new  CsvBetterBulkLoader('BetterBulkLoaderTest_Player');
+		$loader = new CsvBetterBulkLoader('BetterBulkLoaderTest_Player');
 		$filepath = FRAMEWORK_PATH . '/tests/dev/CsvBulkLoaderTest_PlayersWithHeader.csv';
 		$file = fopen($filepath, 'r');
 		$compareCount = $this->getLineCount($file);
@@ -55,7 +55,7 @@ class BetterBulkLoaderTest extends SapphireTest {
 	 * Test import with manual column mapping
 	 */
 	public function testLoadWithColumnMap() {
-		$loader = new  CsvBetterBulkLoader('BetterBulkLoaderTest_Player');
+		$loader = new CsvBetterBulkLoader('BetterBulkLoaderTest_Player');
 		$filepath = FRAMEWORK_PATH . '/tests/dev/CsvBulkLoaderTest_Players.csv';
 		$file = fopen($filepath, 'r');
 		$compareCount = $this->getLineCount($file);
@@ -91,7 +91,7 @@ class BetterBulkLoaderTest extends SapphireTest {
 	 * Test plain import with clear_table_before_import  
 	 */ 
 	public function testDeleteExistingRecords() {
-		$loader = new  CsvBetterBulkLoader('BetterBulkLoaderTest_Player'); 
+		$loader = new CsvBetterBulkLoader('BetterBulkLoaderTest_Player'); 
 		$filepath = FRAMEWORK_PATH . '/tests/dev/CsvBulkLoaderTest_PlayersWithHeader.csv'; 
 		$loader->deleteExistingRecords = true;
 		$results1 = $loader->load($filepath);
@@ -113,12 +113,21 @@ class BetterBulkLoaderTest extends SapphireTest {
 	 * Test import with manual column mapping and custom column names
 	 */
 	public function testLoadWithCustomHeaderAndRelation() {
-		$loader = new  CsvBetterBulkLoader('BetterBulkLoaderTest_Player');
+		$loader = new CsvBetterBulkLoader('BetterBulkLoaderTest_Player');
 		$filepath = FRAMEWORK_PATH . '/tests/dev/CsvBulkLoaderTest_PlayersWithCustomHeaderAndRelation.csv';
 		$file = fopen($filepath, 'r');
 		$compareCount = $this->getLineCount($file);
 		fgetcsv($file); // pop header row
 		$compareRow = fgetcsv($file);
+		//set the correct order of relation fields
+		$loader->mappableFields = array(
+			'FirstName' => 'First Name',
+			'Biography' => 'Bio',
+			'Birthday' => 'Birthday',
+			'Team.Title' => 'Team',
+			'Team.TeamSize' => 'Team Size',
+			'Contract.Amount' => 'Contract Amount'
+ 		);
 		$loader->columnMap = array(
 			'first name' => 'FirstName',
 			'bio' => 'Biography',
@@ -145,10 +154,10 @@ class BetterBulkLoaderTest extends SapphireTest {
 		$this->assertEquals(1, $results->Count(), 'Test correct count of imported data');
 		
 		// Test of augumenting existing relation (created by fixture)
-		$testTeam = BetterBulkLoaderTest_Team::get('BetterBulkLoaderTest_Team')
-						->sort("Created", "DESC")
-						->first();
-
+		$allTeams = BetterBulkLoaderTest_Team::get('BetterBulkLoaderTest_Team');
+		$this->assertEquals(1, $allTeams->count(), "There are now two teams total");
+		$testTeam = $allTeams->filter("Title", "My Team")->first();
+		$this->assertNotNull($testTeam, "My Team exists");
 		$this->assertEquals('20', $testTeam->TeamSize, 'Augumenting existing has_one relation works');
 		
 		// Test of creating relation
@@ -270,7 +279,7 @@ class BetterBulkLoaderTest_Team extends DataObject implements TestOnly {
 	private static $has_many = array(
 		'Players' => 'BetterBulkLoaderTest_Player',
 	);
-	
+
 }
 
 class BetterBulkLoaderTest_Player extends DataObject implements TestOnly {
