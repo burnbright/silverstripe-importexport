@@ -12,6 +12,13 @@
 class BetterBulkLoader extends BulkLoader {
 
 	/**
+	 * Fields and corresponding labels
+	 * that can be mapped to.
+	 * Can include dot notations.
+	 */
+	public $mappableFields = array();
+
+	/**
 	 * Transformation and relation handling
 	 * @var array
 	 */
@@ -449,9 +456,10 @@ class BetterBulkLoader extends BulkLoader {
 	 * @return array
 	 */
 	public function getMappableColumns() {
+		if(!empty($this->mappableFields)){
+			return $this->mappableFields;
+		}
 		$scaffolded = $this->scaffoldMappableFields();
-		//TODO: blacklist  or whitelist fields to be mappable
-		//TODO: add labels for transformables
 		if(!empty($this->transforms)){
 			$transformables = array_keys($this->transforms);
 			$transformables = array_combine($transformables, $transformables);
