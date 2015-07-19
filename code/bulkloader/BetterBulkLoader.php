@@ -61,6 +61,12 @@ class BetterBulkLoader extends BulkLoader {
 	protected $mappableFields_cache;
 
 	/**
+	 * Contains extra fields data for $many_many and $belongs_many_many relations
+	 * @var array
+	 */
+	protected $extraFields = array();
+
+	/**
 	 * Set the BulkLoaderSource for this BulkLoader.
 	 * @param BulkLoaderSource $source
 	 */
@@ -143,7 +149,8 @@ class BetterBulkLoader extends BulkLoader {
 		}
 		$results = new BetterBulkLoader_Result();
 		$iterator = $this->getSource()->getIterator();
-		foreach($iterator as $record) {
+		foreach($iterator as $index => $record) {
+			$results->currentIndex = $index;
 			$this->processRecord($record, $this->columnMap, $results, $preview);
 		}
 		
@@ -155,14 +162,14 @@ class BetterBulkLoader extends BulkLoader {
 	 */
 	protected function processRecord($record, $columnMap, &$results, $preview = false) {
 		if(!is_array($record) || empty($record) || !array_filter($record)){
-			$results->addSkipped("Empty/invalid record data.");
+			$results->addSkipped("Empty/invalid record data.", $results->currentIndex);
 			return;
 		}
 		//map incoming record according to the standardisation mapping (columnMap)
 		$record = $this->columnMapRecord($record);
 		//skip if required data is not present
 		if(!$this->hasRequiredData($record)){
-			$results->addSkipped("Required data is missing.");
+			$results->addSkipped("Required data is missing.", $results->currentIndex);
 			return;
 		}
 		$modelClass = $this->objectClass;
@@ -174,8 +181,10 @@ class BetterBulkLoader extends BulkLoader {
 			if(!isset($record[$field]) || empty($record[$field])){
 				continue;
 			}
+
 			$this->transformField($placeholder, $field, $record[$field]);
 		}
+
 		//find existing duplicate of placeholder data
 		$obj = null;
 		$existing = null;
@@ -201,26 +210,44 @@ class BetterBulkLoader extends BulkLoader {
 		$changed = $existing && $obj->isChanged();
 		//try/catch for potential write() ValidationException
 		try{
-			// write obj record
-			$obj->write();
+			$bSkip = false;
+			if ($obj->hasMethod('getCMSValidator')) {
+				$doValidator = $obj->getCMSValidator();
+				$form = new Form($obj,'EditForm',$obj->getCMSFields(),$obj->getCMSActions(),$doValidator);
+				$form->loadDataFrom($obj);
+				$oValidator = $form->getValidator();
+				$oValidator->php($obj->toMap());
+				$arrErrors = $oValidator->getErrors();
+				if ($arrErrors) {
+					//TODO: at the moment $arrErrors is array of numbers
+					$results->addSkipped(print_r($arrErrors, true), $results->currentIndex);
+					$bSkip = true;
+				}
 
-			//publish pages
-			if($this->publishPages && $obj instanceof SiteTree){
-				$obj->publish('Stage', 'Live');
 			}
 
-			// save to results
-			if($existing) {
-				if($changed){
-					$results->addUpdated($obj);
-				}else{
-					$results->addSkipped("No data was changed.");
+			if (!$bSkip) {
+				// write obj record
+				$obj->write();
+
+				//publish pages
+				if ($this->publishPages && $obj instanceof SiteTree) {
+					$obj->publish('Stage', 'Live');
 				}
-			} else {
-				$results->addCreated($obj);
+
+				// save to results
+				if ($existing) {
+					if ($changed) {
+						$results->addUpdated($obj);
+					} else {
+						$results->addSkipped("No data was changed.", $results->currentIndex);
+					}
+				} else {
+					$results->addCreated($obj);
+				}
 			}
 		}catch(ValidationException $e) {
-			$results->addSkipped($e->getMessage());
+			$results->addSkipped($e->getMessage(), $results->currentIndex);
 		}
 
 		$objID = $obj->ID;
@@ -275,6 +302,212 @@ class BetterBulkLoader extends BulkLoader {
 	}
 
 	/**
+	 * Handle $many_many and $belongs_many_many relationship
+	 *
+	 * Limitations:
+	 * 	All existing relations will be preserved (only add new relations)
+	 * 	Not sure what will happen if this is the first column to process
+	 * 	No new records will be created on the other side
+	 *  If record not found on the other side no action will be taken
+	 * 	No actions will be taken if $filed dose not contains '.' to separate relationName from columnName
+	 *  No duplications will be added
+	 *
+	 * @param $type - belongs_many_many or many_many
+	 * @param $placeholder
+	 * @param $field
+	 * @param $values_string - values are separated by ','
+	 * @param $callback
+	 */
+	protected function handleManyManyRelation($type, $placeholder, $field, $values_string, $callback) {
+		//TODO: do not know when this will be true but it must be handled somehow
+		if(strpos($field, '.') === false)
+			return;
+
+		list($relationAlias, $columnName) = explode('.', $field);
+
+		//TODO: Check if $relationName DataObject exists if (in_array('Group',ClassInfo::subclassesFor('DataObject'))) {...}
+		//TODO: Check if connection table exits  $relationName_$placeholder(s)
+
+		//TODO: extract into a separate method
+		$many_many = Config::inst()->get($this->objectClass, $type)
+			? Config::inst()->get($this->objectClass, $type)
+			: array();
+
+		if (!$relationName = $many_many[$relationAlias])
+			return;
+
+		$values = explode(',', $values_string);
+		foreach($values as $value) {
+			if (!$relation = $relationName::get()->filter($columnName, $value)->first())
+				continue;
+
+			//TODO: if relation exits continue (do not add duplicates)
+			$placeholder->$relationAlias()->add($relation);
+		}
+	}
+
+//	/**
+//	 * Limitations:
+//	 * 	All existing relations will be preserved (only add new relations)
+//	 * 	Not sure what will happen if this is the first column to process
+//	 * 	No new records will be created on the other side
+//	 *  If record not found on the other side no action will be taken
+//	 * 	No actions will be taken if $filed dose not contains '.' to separate relationName from columnName
+//	 *  No duplications will be added
+//	 *
+//	 * @param $placeholder
+//	 * @param $field
+//	 * @param $values_string - values are separated by ','
+//	 * @param $callback
+//	 */
+//	protected function handleBelongsManyManyRelation($placeholder, $field, $values_string, $callback) {
+//		//TODO: do not know when this will be true but it must be handled somehow
+//		if(strpos($field, '.') === false)
+//			return;
+//
+//		list($relationAlias, $columnName) = explode('.', $field);
+//
+//		//TODO: Check if $relationName DataObject exists if (in_array('Group',ClassInfo::subclassesFor('DataObject'))) {...}
+//		//TODO: Check if connection table exits  $relationName_$placeholder(s)
+//
+//		//TODO: extract into a separate method
+//		$belongs_many_many = Config::inst()->get($this->objectClass, 'belongs_many_many')
+//			? Config::inst()->get($this->objectClass, 'belongs_many_many')
+//			: array();
+//
+//		if (!$relationName = $belongs_many_many[$relationAlias])
+//			return;
+//
+//		$values = explode(',', $values_string);
+//		foreach($values as $value) {
+//			if (!$relation = $relationName::get()->filter($columnName, $value)->first())
+//				continue;
+//
+//			//TODO: if relation exits continue (do not add duplicates)
+//			$placeholder->$relationAlias()->add($relation);
+//		}
+//	}
+//
+//	/**
+//	 * Limitations:
+//	 * 	All existing relations will be preserved (only add new relations)
+//	 * 	Not sure what will happen if this is the first column to process
+//	 * 	No new records will be created on the other side
+//	 *  If record not found on the other side no action will be taken
+//	 * 	No actions will be taken if $filed dose not contains '.' to separate relationName from columnName
+//	 *  No duplications will be added
+//	 *
+//	 * @param $placeholder
+//	 * @param $field
+//	 * @param $values_string - values are separated by ','
+//	 * @param $callback
+//	 */
+//	protected function handleManyManyRelation($placeholder, $field, $values_string, $callback) {
+//		//TODO: do not know when this will be true but it must be handled somehow
+//		if(strpos($field, '.') === false)
+//			return;
+//
+//		list($relationAlias, $columnName) = explode('.', $field);
+//
+//		//TODO: Check if $relationName DataObject exists if (in_array('Group',ClassInfo::subclassesFor('DataObject'))) {...}
+//		//TODO: Check if connection table exits  $relationName_$placeholder(s)
+//
+//		//TODO: extract into a separate method
+//		$many_many = Config::inst()->get($this->objectClass, 'many_many')
+//			? Config::inst()->get($this->objectClass, 'many_many')
+//			: array();
+//
+//		if (!$relationName = $many_many[$relationAlias])
+//			return;
+//
+//		$values = explode(',', $values_string);
+//		foreach($values as $value) {
+//			if (!$relation = $relationName::get()->filter($columnName, $value)->first())
+//				continue;
+//
+//			//TODO: if relation exits continue (do not add duplicates)
+//			$placeholder->$relationAlias()->add($relation);
+//		}
+//	}
+
+	protected function handleHasOneRelation($placeholder, $field, $value, $callback) {
+		$relation = null;
+		$relationName = null;
+		//extract relationName and columnName, if present
+		if(strpos($field, '.') !== false){
+			list($relationName, $columnName) = explode('.', $field);
+		}else{
+			$relationName = $field;
+		}
+		//get the list that relation is added to/checked on
+		$relationlist = isset($this->transforms[$field]['list']) &&
+		$this->transforms[$field]['list'] instanceof SS_List ?
+			$this->transforms[$field]['list'] : null;
+		//check for the same relation set on the current record
+		if($placeholder->{$relationName."ID"}){
+			$relation = $placeholder->{$relationName}();
+			if($columnName){
+				$relation->{$columnName} = $value;
+			}
+		}
+		//get/make relation via callback
+		else if($callback){
+			$relation = $callback($value, $placeholder);
+			if($columnName){
+				$relation->{$columnName} = $value;
+			}
+		}
+		//get/make relation via dot notation
+		else if($columnName){
+			if($relationClass = $placeholder->getRelationClass($relationName)){
+				$relation = $relationClass::get()
+					->filter($columnName, $value)
+					->first();
+				//create empty relation object
+				//and set the given value on the appropriate column
+				if(!$relation){
+					$relation = $placeholder->{$relationName}();
+				}
+				//set data on relation
+				$relation->{$columnName} = $value;
+			}
+		}
+
+		//link and create relation objects
+		$linkexisting = isset($this->transforms[$field]['link']) ?
+			(bool)$this->transforms[$field]['link'] :
+			$this->relationLinkDefault;
+		$createnew = isset($this->transforms[$field]['create']) ?
+			(bool)$this->transforms[$field]['create'] :
+			$this->relationCreateDefault;
+		//ditch relation if we aren't linking
+		if(!$linkexisting && $relation && $relation->isInDB()){
+			$relation = null;
+		}
+		//fail validation gracefully
+		try{
+			//write relation object, if configured
+			if($createnew && $relation && !$relation->isInDB()){
+				$relation->write();
+			}
+			//write changes to existing relations
+			else if($relation && $relation->isInDB() && $relation->isChanged()){
+				$relation->write();
+			}
+			//add relation to relationlist, if it exists
+			if($relationlist && !$relationlist->byID($relation->ID)){
+				$relationlist->add($relation);
+			}
+		}catch(ValidationException $e){
+			$relation = null;
+		}
+		//add the relation id to the placeholder
+		if($relationName && $relation && $relation->exists()){
+			$placeholder->{$relationName."ID"} = $relation->ID;
+		}
+	}
+
+	/**
 	 * Perform field transformation or setting of data on placeholder.
 	 * @param  DataObject $placeholder
 	 * @param  string $field
@@ -286,80 +519,18 @@ class BetterBulkLoader extends BulkLoader {
 					$this->transforms[$field]['callback'] : null;
 		//handle relations
 		if($this->isRelation($field)){
-			$relation = null;
-			$relationName = null;
-			//extract relationName and columnName, if present
-			if(strpos($field, '.') !== false){
-				list($relationName, $columnName) = explode('.', $field);
-			}else{
-				$relationName = $field;
-			}
-			//get the list that relation is added to/checked on
-			$relationlist = isset($this->transforms[$field]['list']) &&
-							$this->transforms[$field]['list'] instanceof SS_List ?
-							$this->transforms[$field]['list'] : null;
-			//check for the same relation set on the current record
-			if($placeholder->{$relationName."ID"}){
-				$relation = $placeholder->{$relationName}();
-				if($columnName){
-					$relation->{$columnName} = $value;
-				}
-			}
-			//get/make relation via callback
-			else if($callback){
-				$relation = $callback($value, $placeholder);
-				if($columnName){
-					$relation->{$columnName} = $value;
-				}
-			}
-			//get/make relation via dot notation
-			else if($columnName){
-				if($relationClass = $placeholder->getRelationClass($relationName)){
-					$relation = $relationClass::get()
-									->filter($columnName, $value)
-									->first();
-					//create empty relation object
-					//and set the given value on the appropriate column
-					if(!$relation){
-						$relation = $placeholder->{$relationName}();
-					}
-					//set data on relation
-					$relation->{$columnName} = $value;
-				}
-			}
+			if ($this->isHasOneRelation($field))
+				$this->handleHasOneRelation($placeholder, $field, $value, $callback);
 
-			//link and create relation objects
-			$linkexisting = isset($this->transforms[$field]['link']) ?
-								(bool)$this->transforms[$field]['link'] : 
-								$this->relationLinkDefault;
-			$createnew = isset($this->transforms[$field]['create']) ?
-								(bool)$this->transforms[$field]['create'] :
-								$this->relationCreateDefault;
-			//ditch relation if we aren't linking
-			if(!$linkexisting && $relation && $relation->isInDB()){
-				$relation = null;
-			}
-			//fail validation gracefully
-			try{
-				//write relation object, if configured
-				if($createnew && $relation && !$relation->isInDB()){
-					$relation->write();
-				}
-				//write changes to existing relations
-				else if($relation && $relation->isInDB() && $relation->isChanged()){
-					$relation->write();
-				}
-				//add relation to relationlist, if it exists
-				if($relationlist && !$relationlist->byID($relation->ID)){
-					$relationlist->add($relation);
-				}
-			}catch(ValidationException $e){
-				$relation = null;
-			}
-			//add the relation id to the placeholder
-			if($relationName && $relation && $relation->exists()){
-				$placeholder->{$relationName."ID"} = $relation->ID;
-			}
+			//TODO: do it after record is validated and is stored into the database
+			if ($this->isBelongsManyMany($field))
+//				$this->handleBelongsManyManyRelation($placeholder, $field, $value, $callback);
+				$this->handleManyManyRelation('belongs_many_many', $placeholder, $field, $value, $callback);
+
+			//TODO: do it after record is validated and is stored into the database
+			if ($this->isManyMany($field))
+//				$this->handleManyManyRelation($placeholder, $field, $value, $callback);
+				$this->handleManyManyRelation('many_many', $placeholder, $field, $value, $callback);
 		}
 		//handle data fields
 		else{
@@ -381,10 +552,51 @@ class BetterBulkLoader extends BulkLoader {
 	 * @return boolean
 	 */
 	protected function isRelation($field){
+		if ($this->isHasOneRelation($field))
+			return true;
+
+		if ($this->isBelongsManyMany($field))
+			return true;
+
+		if ($this->isManyMany($field))
+			return true;
+	}
+
+	protected function isBelongsManyMany($field){
 		//get relation name from dot notation
-		if(strpos($field, '.') !== false){
-			list($field, $columnName) = explode('.', $field);
-		}
+		if(strpos($field, '.') === false)
+			return false;
+
+		list($field, $columnName) = explode('.', $field);
+
+		$belongs_many_many = Config::inst()->get($this->objectClass, 'belongs_many_many')
+			? Config::inst()->get($this->objectClass, 'belongs_many_many')
+			: array();
+		//check if relation is present in belongs_many_many
+		return isset($belongs_many_many[$field]);
+	}
+
+	protected function isManyMany($field){
+		//get relation name from dot notation
+		if(strpos($field, '.') === false)
+			return false;
+
+		list($field, $columnName) = explode('.', $field);
+
+		$many_many = Config::inst()->get($this->objectClass, 'many_many')
+			? Config::inst()->get($this->objectClass, 'many_many')
+			: array();
+		//check if relation is present in belongs_many_many
+		return isset($many_many[$field]);
+	}
+
+	protected function isHasOneRelation($field){
+		//get relation name from dot notation
+		if(strpos($field, '.') === false)
+			return false;
+
+		list($field, $columnName) = explode('.', $field);
+
 		$has_ones = singleton($this->objectClass)->has_one();
 		//check if relation is present in has ones
 		return isset($has_ones[$field]);
@@ -487,18 +699,43 @@ class BetterBulkLoader extends BulkLoader {
 		$map = $this->getMappableFieldsForClass($this->objectClass);
 		//set up 'dot notation' (Relation.Field) style mappings
 		if($includerelations){
-			if($has_ones = singleton($this->objectClass)->has_one()){
-				foreach($has_ones as $relationship => $type){
-					$fields = $this->getMappableFieldsForClass($type);
-					foreach($fields as $field => $title){
-						$map[$relationship.".".$field] = 
-							$this->formatMappingFieldLabel($relationship, $title);
-					}
-				}
+			if($has_ones = singleton($this->objectClass)->has_one())
+				$this->addToFieldMap($has_ones, $map);
+
+			//Botzko: add belongs_many_many relationship
+			if($belongs_many_many = Config::inst()->get($this->objectClass, 'belongs_many_many'))
+				$this->addToFieldMap($belongs_many_many, $map);
+
+			//add many_many relationship
+			if($many_many = Config::inst()->get($this->objectClass, 'many_many'))
+				$this->addToFieldMap($many_many, $map);
+
+			//add extra fields from many_many and belongs_many_many relations
+			//TODO: need to be implemented
+			if($extraFields = Config::inst()->get($this->objectClass, 'many_many_extraFields')) {
+				//This is how data must be imported
+//				$videos = $this->Videos();
+//				$videos->add($myVideo, array('PublishedDate' => '12/12/2013 11:11:11));
 			}
 		}
 
 		return $map;
+	}
+
+	/**
+	 * Add relation columns to field map
+	 *
+	 * @param $relations
+	 * @param $map
+	 */
+	protected function addToFieldMap($relations, &$map) {
+		foreach($relations as $relationship => $type){
+			$fields = $this->getMappableFieldsForClass($type);
+			foreach($fields as $field => $title){
+				$map[$relationship.".".$field] =
+					$this->formatMappingFieldLabel($relationship, $title);
+			}
+		}
 	}
 
 	/**
