@@ -288,6 +288,7 @@ class BetterBulkLoader extends BulkLoader {
 		if($this->isRelation($field)){
 			$relation = null;
 			$relationName = null;
+			$columnName = null;
 			//extract relationName and columnName, if present
 			if(strpos($field, '.') !== false){
 				list($relationName, $columnName) = explode('.', $field);
