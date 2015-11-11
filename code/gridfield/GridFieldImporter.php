@@ -29,9 +29,10 @@ class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler 
 
 	/**
 	 * Set the bulk loader for this importer
-	 * @param BulkLoader
+	 * @param BetterBulkLoader $loader
+	 * @return GridFieldImporter
 	 */
-	public function setLoader(BulkLoader $loader) {
+	public function setLoader(BetterBulkLoader $loader) {
 		$this->loader = $loader;
 
 		return $this;
@@ -39,7 +40,7 @@ class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler 
 
 	/**
 	 * Get the BulkLoader
-	 * @return BulkLoader
+	 * @return BetterBulkLoader
 	 */
 	public function getLoader(GridField $gridField) {
 		if(!$this->loader){
@@ -67,9 +68,9 @@ class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler 
 	}
 
 	/**
-	 * @param boolean $canclear
+	 * @param boolean $canClearData
 	 */
-	public function setCanClearData($canclear = true) {
+	public function setCanClearData($canClearData = true) {
 		$this->canClearData = $canClearData;
 	}
 
