@@ -9,7 +9,7 @@ class GridFieldImporter_Request extends RequestHandler
 
     /**
      * Gridfield instance
-     * @var GridField 
+     * @var GridField
      */
     protected $gridField;
 
@@ -24,7 +24,7 @@ class GridFieldImporter_Request extends RequestHandler
      * @var string
      */
     protected $urlSegment = 'importer';
-    
+
     /**
      * Parent handler to link up to
      * @var RequestHandler
@@ -47,10 +47,10 @@ class GridFieldImporter_Request extends RequestHandler
         'upload!' => 'upload',
         '$Action/$FileID' => '$Action'
     );
-    
+
     /**
      * Handler's constructor
-     * 
+     *
      * @param GridField $gridField
      * @param GridField_URLHandler $component
      * @param RequestHandler $handler
@@ -65,7 +65,7 @@ class GridFieldImporter_Request extends RequestHandler
 
     /**
      * Return the original component's UploadField
-     * 
+     *
      * @return UploadField UploadField instance as defined in the component
      */
     public function getUploadField()
@@ -87,13 +87,15 @@ class GridFieldImporter_Request extends RequestHandler
         $body = array_shift($body);
         //add extra data
         $body['import_url'] = Controller::join_links(
-            $this->Link('preview'), $body['id']
+           $this->Link('preview'), $body['id'],
+           // Also pull the back URL from the current request so we can persist this particular URL through the following pages.
+           "?BackURL=" . $this->getBackURL($request)
         );
         //don't return buttons at all
         unset($body['buttons']);
         //re-encode
         $response = new SS_HTTPResponse(Convert::raw2json(array($body)));
-        
+
         return $response;
     }
 
@@ -121,13 +123,14 @@ class GridFieldImporter_Request extends RequestHandler
         $form->Fields()->unshift(
             new LiteralField('mapperfield', $mapper->forTemplate())
         );
+        $form->Fields()->push(new HiddenField("BackURL", "BackURL", $this->getBackURL($request)));
         $form->setFormAction($this->Link('import').'/'.$file->ID);
         $content = ArrayData::create(array(
             'File' => $file,
             'MapperForm'=> $form
         ))->renderWith('GridFieldImporter_preview');
         $controller = $this->getToplevelController();
-        
+
         return $controller->customise(array(
             'Content' => $content
         ));
@@ -204,11 +207,7 @@ class GridFieldImporter_Request extends RequestHandler
             }
         }
         $controller = $this->getToplevelController();
-        $url = method_exists($this->requestHandler, "Link") ?
-            $this->requestHandler->Link() :
-            $controller->Link();
-
-        $controller->redirect($url);
+        $controller->redirectBack();
     }
 
     /**
@@ -236,7 +235,7 @@ class GridFieldImporter_Request extends RequestHandler
 
     /**
      * Pass fileexists request to UploadField
-     * 
+     *
      * @link UploadField->fileexists()
      */
     public function fileexists(SS_HTTPRequest $request)
@@ -303,4 +302,33 @@ class GridFieldImporter_Request extends RequestHandler
     {
         return md5($this->gridField->Link());
     }
+
+   /**
+    * Get's the previous URL that lead up to the current request.
+    *
+    * NOTE: Honestly, this should be built into SS_HTTPRequest, but we can't depend on that right now... so instead,
+    * this is being copied verbatim from Controller (in the framework).
+    *
+    * @param SS_HTTPRequest $request
+    * @return string
+    */
+   protected function getBackURL(SS_HTTPRequest $request) {
+      // Initialize a sane default (basically redirects to root admin URL).
+      $controller = $this->getToplevelController();
+      $url = method_exists($this->requestHandler, "Link") ?
+            $this->requestHandler->Link() :
+            $controller->Link();
+
+      // Try to parse out a back URL using standard framework technique.
+      if($request->requestVar('BackURL')) {
+         $url = $request->requestVar('BackURL');
+      } else if($request->isAjax() && $request->getHeader('X-Backurl')) {
+         $url = $request->getHeader('X-Backurl');
+      } else if($request->getHeader('Referer')) {
+         $url = $request->getHeader('Referer');
+      }
+
+      return $url;
+   }
+
 }
