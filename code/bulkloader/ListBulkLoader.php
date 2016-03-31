@@ -21,7 +21,7 @@ class ListBulkLoader extends BetterBulkLoader
 
     public function setList(DataList $list)
     {
-        $this->list = $source;
+        $this->list = $list;
 
         return $this;
     }
@@ -47,7 +47,7 @@ class ListBulkLoader extends BetterBulkLoader
                 $this->list->add($id);
             }
         }
-        
+
         return $results;
     }
 

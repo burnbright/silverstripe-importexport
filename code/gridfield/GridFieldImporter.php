@@ -5,7 +5,7 @@
  */
 class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler
 {
-        
+
     /**
      * Fragment to write the button to
      * @var string
@@ -72,9 +72,9 @@ class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler
     }
 
     /**
-     * @param boolean $canclear
+     * @param boolean $canClearData
      */
-    public function setCanClearData($canclear = true)
+    public function setCanClearData($canClearData = true)
     {
         $this->canClearData = $canClearData;
     }
@@ -117,7 +117,7 @@ class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler
 
     /**
      * Return a configured UploadField instance
-     * 
+     *
      * @param  GridField $gridField Current GridField
      * @return UploadField          Configured UploadField instance
      */
@@ -137,7 +137,7 @@ class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler
             ->setAllowedExtensions(array('csv'))
             ->setFolderName('csvImports') //TODO: don't store temp CSV in assets
             ->addExtraClass("import-upload-csv-field");
-            
+
         return $uploadField;
     }
 
