@@ -31,9 +31,10 @@ class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler
 
     /**
      * Set the bulk loader for this importer
-     * @param BulkLoader
+     * @param BetterBulkLoader $loader
+     * @return GridFieldImporter
      */
-    public function setLoader(BulkLoader $loader)
+    public function setLoader(BetterBulkLoader $loader)
     {
         $this->loader = $loader;
 
@@ -42,7 +43,7 @@ class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler
 
     /**
      * Get the BulkLoader
-     * @return BulkLoader
+     * @return BetterBulkLoader
      */
     public function getLoader(GridField $gridField)
     {
