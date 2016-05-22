@@ -38,6 +38,12 @@ class BetterBulkLoader extends BulkLoader
     protected $source;
 
     /**
+     * Add new records while importing
+     * @var boolean
+     */
+    protected $addNewRecords = true;
+
+    /**
      * The default behaviour for linking relations
      * @var boolean
      */
@@ -200,6 +206,11 @@ class BetterBulkLoader extends BulkLoader
             $obj = $existing;
             $obj->update($data);
         } else {
+            // new record
+            if (!$this->addNewRecords) {
+                $results->addSkipped('New record not added');
+                return;
+            }
             $obj = $placeholder;
         }
 
