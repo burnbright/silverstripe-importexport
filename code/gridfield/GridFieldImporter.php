@@ -69,7 +69,7 @@ class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler
         $loader = new $class($arg);
         $loader->setSource(new CsvBulkLoaderSource());
         
-        if(isset($this->columnMap)) $loader->columnMap = $this->setColumnMap;
+        if(isset($this->columnMap)) $loader->columnMap = $this->columnMap;
 		
 		if(isset($this->mappableFields)) $loader->mappableFields = $this->mappableFields;
 		
