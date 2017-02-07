@@ -66,6 +66,7 @@ $source->setFilePath("files/myfile.csv");
 
 $loader = new BetterBulkLoader("Product");
 $loader->setSource($source);
+$loader->addNewRecords = false;  // an option to skip new records
 
 $result = $loader->load();
 ```

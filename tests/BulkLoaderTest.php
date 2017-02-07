@@ -65,6 +65,63 @@ class BulkLoaderTest extends SapphireTest
         $this->assertEquals($joe->Country()->Code, "NZ");
     }
 
+    public function testLoadUpdatesOnly()
+    {
+        //Set up some existing dataobjects
+        $nz = BulkLoaderTest_Country::get()->find('Code','NZ');
+        $au = BulkLoaderTest_Country::get()->find('Code','AU');
+
+BulkLoaderTest_Person::create(array("FirstName" => "joe", "Surname" => "Kiwi", "Age" => "62", "CountryID" => $nz->ID))->write();
+       BulkLoaderTest_Person::create(array("FirstName" => "bruce", "Surname" => "Aussie", "Age" => "24", "CountryID" => $au->ID))->write();
+
+        $this->assertEquals(2,BulkLoaderTest_Person::get()->Count(), "Two people exist in BulkLoaderTest_Person class");
+        
+        $loader = new BetterBulkLoader("BulkLoaderTest_Person");
+        $loader->addNewRecords = false;  // don't add new records from source
+        $loader->columnMap = array(
+            "firstname" => "FirstName",
+            "surname" => "Surname",
+            "age" => "Age",
+            "country" => "Country.Code"
+        );
+        $loader->transforms = array(
+            "Country.Code" => array(
+                "link" => true, //link up to existing relations
+                "create" => false //don't create new relation objects
+            )
+        );
+        $loader->duplicateChecks = array(
+            "FirstName"
+        );
+        //set the source data.  Joe has aged one year and shifted to Australia.  Bruce has aged a year too, but is missing other elements, which should remain the same.
+        $data = array(
+            array("firstname" => "joe", "surname" => "Kiwi", "age" => "63", "country" => "AU"),
+            array("firstname" => "bruce", "age" => "25"),
+            array("firstname" => "NotEntered", "surname" => "should not be entered", "age" => "33", "country" => "NZ"),
+            array("firstname" => "NotEntered2", "surname" => "should not be entered as well", "age" => "24", "country" => "AU")
+        );
+        $loader->setSource(new ArrayBulkLoaderSource($data));
+        
+        $results = $loader->load();
+        $this->assertEquals($results->CreatedCount(), 0);
+        $this->assertEquals($results->UpdatedCount(), 2);
+        $this->assertEquals($results->SkippedCount(), 2);
+        $this->assertEquals($results->Count(), 2);
+        
+        $this->assertEquals(2, BulkLoaderTest_Person::get()->Count(), 'Should be two instances');
+        $this->assertNull(BulkLoaderTest_Person::get()->find('FirstName', 'NotEntered'), 'New item "NotEntered" should not be added to BulkLoaderTest_Person');
+        $this->assertNull(BulkLoaderTest_Person::get()->find('FirstName', 'NotEntered2'), 'New item "NotEntered2" should not be added to BulkLoaderTest_Person');
+
+        $joe = BulkLoaderTest_Person::get()->find('FirstName', 'joe');
+        $this->assertSame('63', $joe->Age, 'Joe should have the age of 63');
+        $this->assertSame('Australia', $joe->Country()->Title, 'Joe should have the CountryID assigned to Australia');
+
+        $bruce = BulkLoaderTest_Person::get()->find('FirstName', 'bruce');
+        $this->assertSame('25', $bruce->Age, 'Bruce should have aged by one year to 25');
+        $this->assertSame('Aussie', $bruce->Surname, 'Bruce should still have the surname of Aussie');
+        $this->assertSame('Australia', $bruce->Country()->Title, 'Bruce should still have the CountryID assigned for Australia');
+    }
+
     public function testColumnMap()
     {
         $this->markTestIncomplete("Implement this");
