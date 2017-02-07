@@ -68,10 +68,50 @@ class GridFieldImporter implements GridField_HTMLProvider, GridField_URLHandler
                 $gridlist : $gridField->getModelClass();
         $loader = new $class($arg);
         $loader->setSource(new CsvBulkLoaderSource());
+        
+        if(isset($this->columnMap)) $loader->columnMap = $this->columnMap;
+		
+		if(isset($this->mappableFields)) $loader->mappableFields = $this->mappableFields;
+		
+		if(isset($this->transforms)) $loader->transforms = $this->transforms;
+		
+		if(isset($this->duplicateChecks)) $loader->duplicateChecks = $this->duplicateChecks;
 
         return $loader;
     }
-
+    
+    /**
+     * @param array setColumnMap
+     */
+    public function setColumnMap($array = false)
+    {
+		$this->columnMap = $array;
+    }
+	
+    /**
+     * @param array setMappableFields
+     */
+    public function setMappableFields($array = false)
+    {
+		$this->mappableFields = $array;
+    }
+	
+    /**
+     * @param array setTransforms
+     */
+	public function setTransforms($array = false)
+    {
+		$this->transforms = $array;
+    }
+	
+    /**
+     * @param array setDuplicateChecks
+     */
+	public function setDuplicateChecks($array = false)
+    {
+		$this->duplicateChecks = $array;
+    }
+    
     /**
      * @param boolean $canClearData
      */
